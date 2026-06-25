@@ -47,16 +47,22 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
   }
 
   Future<void> _pausar(Map<String, dynamic> item) async {
-    final tipo = item['target_tipo']?.toString() ?? '';
-    final id = item['target_id']?.toString() ?? '';
+    var tipo = item['target_tipo']?.toString() ?? '';
+    var id = item['target_id']?.toString() ?? '';
+    final esEvento = tipo == 'evento';
+    // Un evento reportado se modera pausando al LOCAL dueño del evento.
+    if (esEvento) {
+      tipo = 'local';
+      id = item['evento_local_id']?.toString() ?? '';
+    }
     if (tipo.isEmpty || id.isEmpty) return;
 
     final ok = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Pausar cuenta'),
+        title: Text(esEvento ? 'Pausar local del evento' : 'Pausar cuenta'),
         content: Text(
-          'Se pausará esta cuenta por reportes reiterados.\n\n'
+          '${esEvento ? 'Se pausará el LOCAL dueño de esta publicación por reportes reiterados.\n\n' : 'Se pausará esta cuenta por reportes reiterados.\n\n'}'
           'Motivo principal: ${item['motivo_top_label'] ?? '-'}',
         ),
         actions: [
@@ -156,8 +162,21 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
   }
 
   void _abrirDetalle(Map<String, dynamic> item) {
-    final tipo = item['target_tipo']?.toString() ?? 'usuario';
-    final id = item['target_id']?.toString() ?? '';
+    var tipo = item['target_tipo']?.toString() ?? 'usuario';
+    var id = item['target_id']?.toString() ?? '';
+    var nombre =
+        item['username']?.toString() ??
+        item['nombre']?.toString() ??
+        'Reportado';
+    // En eventos el detalle apunta al LOCAL dueño (no hay detalle de evento).
+    if (tipo == 'evento') {
+      tipo = 'local';
+      id = item['evento_local_id']?.toString() ?? '';
+      nombre =
+          item['evento_local_username']?.toString() ??
+          item['evento_local_nombre']?.toString() ??
+          'Local';
+    }
     if (id.isEmpty) return;
     Navigator.of(context)
         .push(
@@ -165,10 +184,7 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
             builder: (_) => AdminDetalleScreen(
               tipo: tipo,
               targetId: id,
-              nombreInicial:
-                  item['username']?.toString() ??
-                  item['nombre']?.toString() ??
-                  'Reportado',
+              nombreInicial: nombre,
             ),
           ),
         )
@@ -266,6 +282,11 @@ class _ReporteCard extends StatelessWidget {
     final reportantes = item['reportantes'] is List
         ? item['reportantes'] as List
         : const [];
+    final esEvento = tipo == 'evento';
+    final flyer = item['evento_flyer']?.toString() ?? '';
+    final eventoTitulo = item['evento_titulo']?.toString() ?? nombre;
+    final localUser = item['evento_local_username']?.toString() ?? '';
+    final localNombre = item['evento_local_nombre']?.toString() ?? '';
 
     return Material(
       color: Colors.white,
@@ -287,28 +308,65 @@ class _ReporteCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(
-                    tipo == 'local'
-                        ? Icons.storefront_rounded
-                        : Icons.person_rounded,
-                    color: urgente
-                        ? const Color(0xFFEF4444)
-                        : OwnerTheme.violetaMarca,
-                  ),
+                  if (esEvento)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: SizedBox(
+                        width: 42,
+                        height: 56,
+                        child: flyer.isNotEmpty
+                            ? Image.network(
+                                flyer,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    Container(
+                                      color: const Color(0xFFEEEEEE),
+                                      child: const Icon(
+                                        Icons.movie_rounded,
+                                        color: Colors.black38,
+                                      ),
+                                    ),
+                              )
+                            : Container(
+                                color: const Color(0xFFEEEEEE),
+                                child: const Icon(
+                                  Icons.movie_rounded,
+                                  color: Colors.black38,
+                                ),
+                              ),
+                      ),
+                    )
+                  else
+                    Icon(
+                      tipo == 'local'
+                          ? Icons.storefront_rounded
+                          : Icons.person_rounded,
+                      color: urgente
+                          ? const Color(0xFFEF4444)
+                          : OwnerTheme.violetaMarca,
+                    ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          username.isNotEmpty ? '@$username' : nombre,
+                          esEvento
+                              ? eventoTitulo
+                              : (username.isNotEmpty ? '@$username' : nombre),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
                             fontSize: 14,
                             fontWeight: FontWeight.w900,
                           ),
                         ),
                         Text(
-                          '$tipo · $estado · $count reportes',
+                          esEvento
+                              ? 'Evento · ${localUser.isNotEmpty ? '@$localUser' : (localNombre.isNotEmpty ? localNombre : 'local')} · $count reportes'
+                              : '$tipo · $estado · $count reportes',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.inter(
                             fontSize: 12,
                             color: Colors.black54,

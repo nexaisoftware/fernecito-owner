@@ -1,5 +1,5 @@
 {
-  "buildCommand": "flutter build web --release",
+  "buildCommand": "flutter build web --release --dart-define=URL_SUPABASE=$URL_SUPABASE --dart-define=CLAVE_PUBLICA_SUPABASE=$CLAVE_PUBLICA_SUPABASE",
   "outputDirectory": "build/web",
   "installCommand": "flutter pub get",
   "framework": null,
@@ -7,6 +7,13 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
+    {
+      "source": "/assets/.env",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" },
+        { "key": "X-Robots-Tag", "value": "noindex" }
+      ]
+    },
     {
       "source": "/(.*)",
       "headers": [

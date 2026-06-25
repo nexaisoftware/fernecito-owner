@@ -40,6 +40,7 @@ dependencies:
   intl: ^0.20.2
   fl_chart: ^0.69.0
   url_launcher: ^6.3.2
+  font_awesome_flutter: ^10.7.0
 
 dev_dependencies:
   flutter_test:
@@ -82,7 +83,6 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - .env
     - assets/images/logo_f_fernecito.png
     - assets/images/ownerlogo.png
 

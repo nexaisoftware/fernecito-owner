@@ -11,6 +11,25 @@ set -euo pipefail
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
+load_env_file() {
+  local file="$1"
+  while IFS='=' read -r key value || [ -n "$key" ]; do
+    key="$(printf '%s' "$key" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    case "$key" in ''|\#*) continue ;; esac
+    value="$(printf '%s' "${value:-}" | tr -d '\r')"
+    value="${value%\"}"
+    value="${value#\"}"
+    export "$key=$value"
+  done < "$file"
+}
+
+if [ -f .env ]; then
+  load_env_file .env
+fi
+
+: "${URL_SUPABASE:?Falta URL_SUPABASE en frontend_owner/.env o entorno}"
+: "${CLAVE_PUBLICA_SUPABASE:?Falta CLAVE_PUBLICA_SUPABASE en frontend_owner/.env o entorno}"
+
 echo "═══════════════════════════════════════════════════════"
 echo "  Fernecito Owner — Deploy a producción (Vercel)"
 echo "═══════════════════════════════════════════════════════"
@@ -20,7 +39,9 @@ echo "▸ Paso 1/3: flutter pub get + build"
 flutter pub get
 # --no-tree-shake-icons: en el dashboard usamos muchos íconos pasados como
 # parámetros de runtime, el tree-shaker los borra y quedan invisibles.
-flutter build web --release --no-tree-shake-icons
+flutter build web --release --no-tree-shake-icons \
+  --dart-define=URL_SUPABASE="$URL_SUPABASE" \
+  --dart-define=CLAVE_PUBLICA_SUPABASE="$CLAVE_PUBLICA_SUPABASE"
 
 echo ""
 echo "▸ Paso 2/3: vercel build (empaqueta el output)"
@@ -90,14 +111,16 @@ cd - > /dev/null
 # Estrategia: must-revalidate en archivos clave + max-age corto en assets.
 cat > .vercel/output/config.json <<'EOF'
 {
-  "version": 3,
-  "routes": [
-    { "src": "/main\\.dart\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
+	  "version": 3,
+	  "routes": [
+	    { "src": "/.*\\.env(\\..*)?$", "status": 404 },
+	    { "src": "/main\\.dart\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/flutter_bootstrap\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/flutter_service_worker\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/index\\.html", "headers": { "cache-control": "public, max-age=0, must-revalidate", "clear-site-data": "\"cache\"" }, "continue": true },
     { "src": "/favicon\\.png", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/icons/(.*)", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
+	    { "src": "/assets/.*\\.env(\\..*)?$", "status": 404 },
     { "src": "/assets/(.*)", "headers": { "cache-control": "public, max-age=3600, must-revalidate" }, "continue": true },
     {
       "src": "/(.*)",
