@@ -268,6 +268,7 @@ class _ItemCard extends StatelessWidget {
     final estado = item['estado_cuenta']?.toString() ?? 'activa';
     final plan = esLocal ? (item['plan_suscripcion']?.toString() ?? 'gratis') : null;
     final verificado = item['local_verificado'] == true;
+    final esPionero = item['es_pionero'] == true;
     final ciudad = item['ciudad']?.toString() ?? '';
     final pausada = estado == 'pausada';
 
@@ -306,7 +307,29 @@ class _ItemCard extends StatelessWidget {
                         ),
                         if (verificado) ...[
                           const SizedBox(width: 4),
-                          const Icon(Icons.verified, size: 13, color: Color(0xFF0EA5E9)),
+                          Icon(
+                            Icons.verified,
+                            size: 13,
+                            color: esPionero ? const Color(0xFFE0B800) : const Color(0xFF0EA5E9),
+                          ),
+                        ],
+                        if (esPionero) ...[
+                          const SizedBox(width: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFE0B800),
+                              borderRadius: BorderRadius.circular(99),
+                            ),
+                            child: Text(
+                              'P',
+                              style: GoogleFonts.inter(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w900,
+                                color: const Color(0xFF3B2F00),
+                              ),
+                            ),
+                          ),
                         ],
                       ],
                     ),

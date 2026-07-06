@@ -72,6 +72,150 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
   String get _email => _data?['email']?.toString() ?? '-';
 
   bool get _estaPausada => (_perfil['estado_cuenta']?.toString() ?? 'activa') == 'pausada';
+  bool get _esPionero => _perfil['es_pionero'] == true;
+
+  Future<void> _invitarProgramaPioneros() async {
+    if (!_esLocal || _esPionero) return;
+    String? codigoGenerado;
+    var generando = false;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setSheet) {
+            Future<void> generar() async {
+              setSheet(() => generando = true);
+              final res = await OwnerAdminService.instance.generarCodigoPionero(widget.targetId);
+              if (!mounted) return;
+              setSheet(() {
+                generando = false;
+                if (res['ok'] == true) {
+                  codigoGenerado = res['codigo']?.toString();
+                }
+              });
+              if (res['ok'] != true) {
+                _showResult(res, 'Generar código');
+              }
+            }
+
+            Future<void> compartir() async {
+              final codigo = codigoGenerado;
+              if (codigo == null || codigo.isEmpty) return;
+              final nombre = _perfil['nombre_local']?.toString();
+              final saludo = (nombre != null && nombre.trim().isNotEmpty)
+                  ? '¡$nombre, fuiste seleccionado'
+                  : '¡Fuiste seleccionado';
+              final msg =
+                  '$saludo para el Programa Pioneros de Fernecito!\n\n'
+                  'Canjeá tu código en la app Locales → Administrar suscripciones → Programa Pioneros.\n\n'
+                  'Tu código: $codigo\n\n'
+                  'https://applocales.fernecitoapp.com';
+              await Clipboard.setData(ClipboardData(text: msg));
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Mensaje copiado al portapapeles')),
+              );
+            }
+
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 18, 18, 28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Programa Pioneros',
+                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Generá un código único para este local. Solo él puede canjearlo.',
+                      style: GoogleFonts.inter(fontSize: 13, color: Colors.black54, height: 1.35),
+                    ),
+                    if (codigoGenerado != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8DC),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Text(
+                          codigoGenerado!,
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.inter(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 2,
+                            color: const Color(0xFFB8860B),
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: generando ? null : generar,
+                      icon: generando
+                          ? const SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            )
+                          : const Icon(Icons.qr_code_2),
+                      label: Text(codigoGenerado == null ? 'Generar código Pionero' : 'Regenerar código'),
+                    ),
+                    if (codigoGenerado != null) ...[
+                      const SizedBox(height: 10),
+                      OutlinedButton.icon(
+                        onPressed: compartir,
+                        icon: const Icon(Icons.share),
+                        label: const Text('Copiar mensaje para compartir'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _quitarProgramaPionero() async {
+    if (!_esLocal || !_esPionero) return;
+    final ok = await _confirmar(
+      'Quitar Programa Pioneros',
+      'Se revocará el estado Pionero de este local. No se modifica su plan de suscripción '
+      'ni la verificación. ¿Continuar?',
+      'Quitar Pionero',
+      destructiva: true,
+    );
+    if (!ok) return;
+    setState(() => _procesandoAccion = true);
+    try {
+      final res = await OwnerAdminService.instance.quitarPionero(widget.targetId);
+      if (!mounted) return;
+      _showResult(res, 'Estado Pionero revocado');
+      if (res['ok'] == true) {
+        await _cargar();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      _showResult(
+        {'ok': false, 'code': 'unexpected', 'error': e.toString()},
+        '',
+      );
+    } finally {
+      if (mounted) setState(() => _procesandoAccion = false);
+    }
+  }
 
   Future<void> _resetPassword() async {
     // Menú de elección: email oficial vs pass temporal generada por owner.
@@ -606,6 +750,21 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
           color: const Color(0xFF3B82F6),
           onTap: _procesandoAccion ? null : _resetPassword,
         ),
+        if (_esLocal && !_esPionero)
+          _BotonAccion(
+            icono: Icons.star,
+            label: 'Invitar a Programa Pioneros',
+            color: const Color(0xFFE0B800),
+            onTap: _procesandoAccion ? null : _invitarProgramaPioneros,
+          ),
+        if (_esLocal && _esPionero)
+          _BotonAccion(
+            icono: Icons.star_border,
+            label: 'Quitar Pionero',
+            color: const Color(0xFFDC2626),
+            cargando: _procesandoAccion,
+            onTap: _procesandoAccion ? null : _quitarProgramaPionero,
+          ),
         _BotonAccion(
           icono: _estaPausada ? Icons.play_circle : Icons.pause_circle,
           label: _estaPausada ? 'Reactivar cuenta' : 'Pausar cuenta',
@@ -642,6 +801,8 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
       items.addAll([
         _StatItem('Plan', (_perfil['plan_suscripcion']?.toString() ?? '-').toUpperCase(),
             Icons.workspace_premium, _planColor(_perfil['plan_suscripcion']?.toString())),
+        if (_esPionero)
+          _StatItem('Pionero', 'Activo', Icons.star, const Color(0xFFE0B800)),
         _StatItem('Verificado', (_perfil['local_verificado'] == true) ? 'Sí' : 'No',
             Icons.verified, const Color(0xFF0EA5E9)),
         _StatItem('Eventos publicados', '${_stats['eventos_total'] ?? 0}',

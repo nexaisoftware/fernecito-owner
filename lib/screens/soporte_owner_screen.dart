@@ -429,7 +429,29 @@ class _TicketCard extends StatelessWidget {
                           ),
                           if (ticket.localVerificado) ...[
                             const SizedBox(width: 4),
-                            const Icon(Icons.verified, size: 14, color: Color(0xFF0EA5E9)),
+                            Icon(
+                              Icons.verified,
+                              size: 14,
+                              color: ticket.esPionero ? const Color(0xFFE0B800) : const Color(0xFF0EA5E9),
+                            ),
+                          ],
+                          if (ticket.esPionero) ...[
+                            const SizedBox(width: 6),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE0B800),
+                                borderRadius: BorderRadius.circular(99),
+                              ),
+                              child: Text(
+                                'P · Prioridad',
+                                style: GoogleFonts.inter(
+                                  fontSize: 9,
+                                  fontWeight: FontWeight.w900,
+                                  color: const Color(0xFF3B2F00),
+                                ),
+                              ),
+                            ),
                           ],
                         ],
                       ),

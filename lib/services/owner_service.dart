@@ -89,6 +89,36 @@ class OwnerService {
 
   Future<Map<String, dynamic>> ejecutarCronManual() async {
     final res = await _sb.functions.invoke('ejecutar_cron_planes', body: {});
+    final data = Map<String, dynamic>.from(res.data as Map);
+    final resultado = data['resultado'];
+    if (resultado is Map) {
+      return {
+        'ok': data['ok'] == true,
+        ...Map<String, dynamic>.from(resultado as Map),
+      };
+    }
+    return data;
+  }
+
+  /// Envía una notificación push a TODOS los usuarios con la app. Solo owner.
+  Future<Map<String, dynamic>> enviarPushMasiva({
+    required String titulo,
+    required String cuerpo,
+  }) async {
+    final res = await _sb.functions.invoke(
+      'enviar_push_masiva',
+      body: {'titulo': titulo, 'cuerpo': cuerpo},
+    );
     return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Historial de envíos de push (para el panel Notificar).
+  Future<List<Map<String, dynamic>>> listarEnviosPush({int limit = 20}) async {
+    final data = await _sb
+        .from('push_envios')
+        .select('titulo, cuerpo, destinatarios, exitosos, fallidos, fecha')
+        .order('fecha', ascending: false)
+        .limit(limit);
+    return List<Map<String, dynamic>>.from(data);
   }
 }

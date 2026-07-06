@@ -28,12 +28,13 @@ class _PagosOwnerScreenState extends State<PagosOwnerScreen> {
       final ok = r['ok'] == true;
       final renovados = r['renovados'];
       final vencidos = r['vencidos'];
+      final recuperados = r['recuperados'];
       scaffold.showSnackBar(
         SnackBar(
           content: Text(
             ok
-                ? 'Cron OK · renovados: ${renovados ?? 0}, vencidos: ${vencidos ?? 0}'
-                : 'Cron falló: ${r['code'] ?? 'error'}',
+                ? 'Cron OK · renovados: ${renovados ?? 0}, vencidos: ${vencidos ?? 0}, recuperados: ${recuperados ?? 0}'
+                : 'Cron falló: ${r['code'] ?? r['error'] ?? 'error'}',
           ),
         ),
       );

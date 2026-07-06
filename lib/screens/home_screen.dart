@@ -6,12 +6,14 @@ import '../widgets/app_logo_image.dart';
 import 'admin_owner_screen.dart';
 import 'metricas_owner_screen.dart';
 import 'moderacion_owner_screen.dart';
+import 'notificar_owner_screen.dart';
 import 'pagos_owner_screen.dart';
 import 'soporte_owner_screen.dart';
 
 enum _NavModulo {
   pagos(Icons.payments_rounded, 'Pagos'),
   metricas(Icons.bar_chart_rounded, 'Métricas'),
+  notificar(Icons.campaign_rounded, 'Notificar'),
   soporte(Icons.support_agent_rounded, 'Soporte'),
   moderacion(Icons.report_problem_rounded, 'Moderación'),
   admin(Icons.admin_panel_settings_rounded, 'Admin');
@@ -40,6 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return switch (modulo) {
       _NavModulo.pagos => const PagosOwnerScreen(),
       _NavModulo.metricas => const MetricasOwnerScreen(),
+      _NavModulo.notificar => const NotificarOwnerScreen(),
       _NavModulo.soporte => const SoporteOwnerScreen(),
       _NavModulo.moderacion => const ModeracionOwnerScreen(),
       _NavModulo.admin => const AdminOwnerScreen(),

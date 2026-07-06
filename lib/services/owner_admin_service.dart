@@ -82,6 +82,34 @@ class OwnerAdminService {
     return null;
   }
 
+  Future<Map<String, dynamic>> generarCodigoPionero(String idLocal) async {
+    try {
+      final res = await _sb.rpc(
+        'owner_generar_codigo_pionero',
+        params: {'p_id_local': idLocal},
+      );
+      return _mapRpc(res);
+    } on PostgrestException catch (e) {
+      return _rpcError(e);
+    } catch (e) {
+      return {'ok': false, 'code': 'network_error', 'error': e.toString()};
+    }
+  }
+
+  Future<Map<String, dynamic>> quitarPionero(String idLocal) async {
+    try {
+      final res = await _sb.rpc(
+        'owner_quitar_pionero',
+        params: {'p_id_local': idLocal},
+      );
+      return _mapRpc(res);
+    } on PostgrestException catch (e) {
+      return _rpcError(e);
+    } catch (e) {
+      return {'ok': false, 'code': 'network_error', 'error': e.toString()};
+    }
+  }
+
   /// Pausa o reactiva una cuenta.
   /// [tipo]: 'usuario' | 'local'
   /// [pausar]: true=pausar, false=reactivar

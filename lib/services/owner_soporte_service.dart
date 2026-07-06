@@ -12,6 +12,7 @@ class SoporteTicket {
   final String? fotoPerfilUrl;
   final String? planSuscripcion;
   final bool localVerificado;
+  final bool esPionero;
 
   SoporteTicket({
     required this.idLocal,
@@ -24,6 +25,7 @@ class SoporteTicket {
     required this.fotoPerfilUrl,
     required this.planSuscripcion,
     required this.localVerificado,
+    required this.esPionero,
   });
 
   bool get esAbierta => estado == 'abierta';
@@ -42,6 +44,7 @@ class SoporteTicket {
       fotoPerfilUrl: j['foto_perfil_url']?.toString(),
       planSuscripcion: j['plan_suscripcion']?.toString(),
       localVerificado: j['local_verificado'] == true,
+      esPionero: j['es_pionero'] == true,
     );
   }
 }
