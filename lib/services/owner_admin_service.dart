@@ -63,6 +63,23 @@ class OwnerAdminService {
     }
   }
 
+  Future<Map<String, dynamic>> ocultarEventoReportado({
+    required String idEvento,
+    String? motivo,
+  }) async {
+    try {
+      final res = await _sb.rpc(
+        'owner_ocultar_evento_reportado',
+        params: {'p_id_evento': idEvento, 'p_motivo': motivo},
+      );
+      return _mapRpc(res);
+    } on PostgrestException catch (e) {
+      return _rpcError(e);
+    } catch (e) {
+      return {'ok': false, 'code': 'network_error', 'error': e.toString()};
+    }
+  }
+
   Future<Map<String, dynamic>?> detalleUsuario(String id) async {
     final res = await _sb.rpc(
       'admin_get_usuario_detalle',

@@ -23,8 +23,26 @@ load_env_file() {
   done < "$file"
 }
 
+load_firebase_env_file() {
+  local file="$1"
+  while IFS='=' read -r key value || [ -n "$key" ]; do
+    key="$(printf '%s' "$key" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    case "$key" in FIREBASE_WEB_*|FCM_WEB_VAPID_KEY) ;;
+      *) continue ;;
+    esac
+    value="$(printf '%s' "${value:-}" | tr -d '\r')"
+    value="${value%\"}"
+    value="${value#\"}"
+    export "$key=$value"
+  done < "$file"
+}
+
 if [ -f .env ]; then
   load_env_file .env
+fi
+
+if [ -z "${FIREBASE_WEB_API_KEY:-}" ] && [ -f ../frontend_locales/.env ]; then
+  load_firebase_env_file ../frontend_locales/.env
 fi
 
 : "${URL_SUPABASE:?Falta URL_SUPABASE en frontend_owner/.env o entorno}"
@@ -41,7 +59,37 @@ flutter pub get
 # parámetros de runtime, el tree-shaker los borra y quedan invisibles.
 flutter build web --release --no-tree-shake-icons \
   --dart-define=URL_SUPABASE="$URL_SUPABASE" \
-  --dart-define=CLAVE_PUBLICA_SUPABASE="$CLAVE_PUBLICA_SUPABASE"
+  --dart-define=CLAVE_PUBLICA_SUPABASE="$CLAVE_PUBLICA_SUPABASE" \
+  --dart-define=FIREBASE_WEB_API_KEY="${FIREBASE_WEB_API_KEY:-}" \
+  --dart-define=FIREBASE_WEB_APP_ID="${FIREBASE_WEB_APP_ID:-}" \
+  --dart-define=FIREBASE_WEB_MESSAGING_SENDER_ID="${FIREBASE_WEB_MESSAGING_SENDER_ID:-}" \
+  --dart-define=FIREBASE_WEB_PROJECT_ID="${FIREBASE_WEB_PROJECT_ID:-}" \
+  --dart-define=FIREBASE_WEB_AUTH_DOMAIN="${FIREBASE_WEB_AUTH_DOMAIN:-}" \
+  --dart-define=FIREBASE_WEB_STORAGE_BUCKET="${FIREBASE_WEB_STORAGE_BUCKET:-}" \
+  --dart-define=FCM_WEB_VAPID_KEY="${FCM_WEB_VAPID_KEY:-}"
+
+echo ""
+echo "▸ Paso 1b/3: deploy_id en build/web/version.json"
+python3 - <<'PY'
+import json, os, subprocess, time
+
+path = "build/web/version.json"
+with open(path, encoding="utf-8") as f:
+    data = json.load(f)
+
+git_ref = (os.environ.get("VERCEL_GIT_COMMIT_SHA") or "").strip()
+if not git_ref:
+    try:
+        git_ref = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
+        ).strip()
+    except Exception:
+        git_ref = "local"
+
+data["deploy_id"] = f"{git_ref[:12]}-{int(time.time())}"
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(data, f, separators=(",", ":"))
+PY
 
 echo ""
 echo "▸ Paso 2/3: vercel build (empaqueta el output)"
@@ -49,6 +97,34 @@ echo "▸ Paso 2/3: vercel build (empaqueta el output)"
 rm -rf .vercel/output
 mkdir -p .vercel/output/static
 cp -R build/web/. .vercel/output/static/
+
+echo "    → Push web owner: firebase-messaging-sw.js + firebase-config-sw.js"
+cp "$SCRIPT_DIR/web/firebase-messaging-sw.js" .vercel/output/static/firebase-messaging-sw.js
+if [ -n "${FIREBASE_WEB_API_KEY:-}" ] && [ -n "${FIREBASE_WEB_APP_ID:-}" ] && [ -n "${FIREBASE_WEB_MESSAGING_SENDER_ID:-}" ] && [ -n "${FIREBASE_WEB_PROJECT_ID:-}" ]; then
+  python3 - <<'PY'
+import json, os
+cfg = {
+    "apiKey": os.environ.get("FIREBASE_WEB_API_KEY", ""),
+    "appId": os.environ.get("FIREBASE_WEB_APP_ID", ""),
+    "messagingSenderId": os.environ.get("FIREBASE_WEB_MESSAGING_SENDER_ID", ""),
+    "projectId": os.environ.get("FIREBASE_WEB_PROJECT_ID", ""),
+}
+auth_domain = os.environ.get("FIREBASE_WEB_AUTH_DOMAIN", "")
+storage_bucket = os.environ.get("FIREBASE_WEB_STORAGE_BUCKET", "")
+if auth_domain:
+    cfg["authDomain"] = auth_domain
+if storage_bucket:
+    cfg["storageBucket"] = storage_bucket
+with open(".vercel/output/static/firebase-config-sw.js", "w", encoding="utf-8") as f:
+    f.write("self.fernecitoFirebaseConfig = ")
+    json.dump(cfg, f, separators=(",", ":"))
+    f.write(";\n")
+PY
+else
+  cat > .vercel/output/static/firebase-config-sw.js <<'JS'
+self.fernecitoFirebaseConfig = null;
+JS
+fi
 
 # ── Cache busting de Material Icons font ─────────────────────────────────────
 # Flutter no agrega hash al nombre del font. Cuando algún deploy lo marcó
@@ -117,7 +193,10 @@ cat > .vercel/output/config.json <<'EOF'
 	    { "src": "/main\\.dart\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/flutter_bootstrap\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/flutter_service_worker\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
+    { "src": "/firebase-messaging-sw\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
+    { "src": "/firebase-config-sw\\.js", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/index\\.html", "headers": { "cache-control": "public, max-age=0, must-revalidate", "clear-site-data": "\"cache\"" }, "continue": true },
+    { "src": "/version\\.json", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/favicon\\.png", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
     { "src": "/icons/(.*)", "headers": { "cache-control": "public, max-age=0, must-revalidate" }, "continue": true },
 	    { "src": "/assets/.*\\.env(\\..*)?$", "status": 404 },

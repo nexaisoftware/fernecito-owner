@@ -1,28 +1,15 @@
 import 'package:flutter/material.dart';
 
+import '../core/owner_nav_modulo.dart';
 import '../core/owner_theme.dart';
+import '../core/servicio_push_owner.dart';
 import '../services/owner_service.dart';
 import '../widgets/app_logo_image.dart';
-import 'admin_owner_screen.dart';
+import '../widgets/dialog_permiso_push_owner.dart';
+import 'dashboard_owner_screen.dart';
 import 'metricas_owner_screen.dart';
 import 'moderacion_owner_screen.dart';
-import 'notificar_owner_screen.dart';
-import 'pagos_owner_screen.dart';
 import 'soporte_owner_screen.dart';
-
-enum _NavModulo {
-  pagos(Icons.payments_rounded, 'Pagos'),
-  metricas(Icons.bar_chart_rounded, 'Métricas'),
-  notificar(Icons.campaign_rounded, 'Notificar'),
-  soporte(Icons.support_agent_rounded, 'Soporte'),
-  moderacion(Icons.report_problem_rounded, 'Moderación'),
-  admin(Icons.admin_panel_settings_rounded, 'Admin');
-
-  const _NavModulo(this.icon, this.label);
-
-  final IconData icon;
-  final String label;
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -32,20 +19,29 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  _NavModulo _modulo = _NavModulo.pagos;
+  OwnerNavModulo _modulo = OwnerNavModulo.dashboard;
 
   static const _desktopBreakpoint = 900.0;
+  static const _modulos = OwnerNavModulo.values;
 
-  static const _modulos = _NavModulo.values;
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DialogPermisoPushOwner.mostrarSiCorresponde(context);
+    });
+  }
 
-  Widget _moduloContent(_NavModulo modulo) {
+  void _irAModulo(OwnerNavModulo modulo) {
+    setState(() => _modulo = modulo);
+  }
+
+  Widget _moduloContent(OwnerNavModulo modulo) {
     return switch (modulo) {
-      _NavModulo.pagos => const PagosOwnerScreen(),
-      _NavModulo.metricas => const MetricasOwnerScreen(),
-      _NavModulo.notificar => const NotificarOwnerScreen(),
-      _NavModulo.soporte => const SoporteOwnerScreen(),
-      _NavModulo.moderacion => const ModeracionOwnerScreen(),
-      _NavModulo.admin => const AdminOwnerScreen(),
+      OwnerNavModulo.metricas => const MetricasOwnerScreen(),
+      OwnerNavModulo.soporte => const SoporteOwnerScreen(),
+      OwnerNavModulo.moderacion => const ModeracionOwnerScreen(),
+      OwnerNavModulo.dashboard => DashboardOwnerScreen(onIrAModulo: _irAModulo),
     };
   }
 
@@ -76,6 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
           PopupMenuButton<String>(
             onSelected: (v) async {
               if (v == 'logout') {
+                ServicioPushOwner.instancia.olvidarLocal();
                 await OwnerService.instance.signOut();
               }
             },
@@ -154,6 +151,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   setState(() => _modulo = _modulos[i]),
               backgroundColor: OwnerTheme.superficie,
               indicatorColor: OwnerTheme.violetaMarca.withValues(alpha: 0.12),
+              labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
               destinations: _modulos
                   .map(
                     (m) => NavigationDestination(

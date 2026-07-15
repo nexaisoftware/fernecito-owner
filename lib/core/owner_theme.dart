@@ -38,7 +38,8 @@ class OwnerTheme {
       surfaceContainer: fondo,
     );
 
-    final textTheme = GoogleFonts.baloo2TextTheme().apply(
+    // Inter como fuente base (evita subrayado amarillo de Baloo en web en widgets M3).
+    final textTheme = GoogleFonts.interTextTheme().apply(
       bodyColor: texto,
       displayColor: texto,
     );
@@ -47,8 +48,15 @@ class OwnerTheme {
       useMaterial3: true,
       colorScheme: base,
       scaffoldBackgroundColor: fondo,
-      fontFamily: GoogleFonts.baloo2().fontFamily,
+      fontFamily: GoogleFonts.inter().fontFamily,
       textTheme: textTheme,
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: ButtonStyle(
+          textStyle: WidgetStatePropertyAll(
+            GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700),
+          ),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: superficie,
         surfaceTintColor: Colors.transparent,
@@ -89,8 +97,9 @@ class OwnerTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: fondo,
-        labelStyle: baloo(fontSize: 14, fontWeight: FontWeight.w600, color: textoSecundario),
+        fillColor: superficie,
+        labelStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: textoSecundario),
+        hintStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: textoSecundario),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: borde),

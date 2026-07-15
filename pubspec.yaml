@@ -41,6 +41,10 @@ dependencies:
   fl_chart: ^0.69.0
   url_launcher: ^6.3.2
   font_awesome_flutter: ^10.7.0
+  http: ^1.6.0
+  shared_preferences: ^2.5.3
+  firebase_core: ^3.8.0
+  firebase_messaging: ^15.1.5
 
 dev_dependencies:
   flutter_test:
@@ -85,6 +89,8 @@ flutter:
   assets:
     - assets/images/logo_f_fernecito.png
     - assets/images/ownerlogo.png
+    - assets/images/icono_usuarios.png
+    - assets/images/icono_locales.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:

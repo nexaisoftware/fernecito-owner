@@ -1,5 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../core/cron_owner_tipo.dart';
+import '../models/push_filtros.dart';
+
 class OwnerService {
   OwnerService._();
   static final OwnerService instance = OwnerService._();
@@ -87,36 +90,60 @@ class OwnerService {
     return Map<String, dynamic>.from(res.data as Map);
   }
 
+  /// Ejecuta cron de planes (legacy — preferir [ejecutarCronOwner]).
   Future<Map<String, dynamic>> ejecutarCronManual() async {
-    final res = await _sb.functions.invoke('ejecutar_cron_planes', body: {});
-    final data = Map<String, dynamic>.from(res.data as Map);
-    final resultado = data['resultado'];
-    if (resultado is Map) {
-      return {
-        'ok': data['ok'] == true,
-        ...Map<String, dynamic>.from(resultado as Map),
-      };
-    }
-    return data;
+    return ejecutarCronOwner(tipo: CronOwnerTipo.suscripciones);
   }
 
-  /// Envía una notificación push a TODOS los usuarios con la app. Solo owner.
+  /// Fuerza crons del sistema. Solo owner.
+  /// [tipo]: todos | suscripciones | notificaciones | eventos | pioneros
+  Future<Map<String, dynamic>> ejecutarCronOwner({
+    required CronOwnerTipo tipo,
+  }) async {
+    final res = await _sb.functions.invoke(
+      'ejecutar_cron_owner',
+      body: {'tipo': tipo.id},
+    );
+    return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Envía una notificación push masiva. Solo owner.
   Future<Map<String, dynamic>> enviarPushMasiva({
     required String titulo,
     required String cuerpo,
+    required String target,
+    PushFiltros? filtros,
   }) async {
-    final res = await _sb.functions.invoke(
-      'enviar_push_masiva',
-      body: {'titulo': titulo, 'cuerpo': cuerpo},
-    );
+    final body = <String, dynamic>{
+      'titulo': titulo,
+      'cuerpo': cuerpo,
+      'target': target,
+    };
+    if (filtros != null && filtros.activo) {
+      body['filtros'] = filtros.toJson();
+    }
+    final res = await _sb.functions.invoke('enviar_push_masiva', body: body);
     return Map<String, dynamic>.from(res.data as Map);
+  }
+
+  /// Cuenta dispositivos alcanzables según target y filtros (solo owner).
+  Future<int> contarAlcancePush({
+    required String target,
+    PushFiltros? filtros,
+  }) async {
+    final params = <String, dynamic>{'p_target': target};
+    if (filtros != null && filtros.activo) {
+      params['p_filtros'] = filtros.toJson();
+    }
+    final res = await _sb.rpc('owner_push_alcance', params: params);
+    return (res as num?)?.toInt() ?? 0;
   }
 
   /// Historial de envíos de push (para el panel Notificar).
   Future<List<Map<String, dynamic>>> listarEnviosPush({int limit = 20}) async {
     final data = await _sb
         .from('push_envios')
-        .select('titulo, cuerpo, destinatarios, exitosos, fallidos, fecha')
+        .select('titulo, cuerpo, segmento, destinatarios, exitosos, fallidos, fecha')
         .order('fecha', ascending: false)
         .limit(limit);
     return List<Map<String, dynamic>>.from(data);

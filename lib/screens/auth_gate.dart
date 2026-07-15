@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../services/owner_service.dart';
+import '../core/servicio_push_owner.dart';
 import 'login_screen.dart';
 import 'home_screen.dart';
 
@@ -39,6 +40,9 @@ class _AuthGateState extends State<AuthGate> {
       _isOwner = ok;
       _loading = false;
     });
+    if (ok) {
+      await ServicioPushOwner.instancia.sincronizarSiAutorizado();
+    }
     if (!ok) {
       await Supabase.instance.client.auth.signOut();
       if (mounted) {

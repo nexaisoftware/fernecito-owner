@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
-import '../core/fernecito_brand.dart';
 import '../core/owner_theme.dart';
 import '../services/owner_service.dart';
-import '../widgets/app_logo_image.dart';
 import 'recover_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -36,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FernecitoBrand.violetaFondoPastel,
+      backgroundColor: OwnerTheme.fondo,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -48,15 +46,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Column(
                     children: [
-                      const SizedBox(height: 24),
-                      const AppLogoImage(size: 88),
-                      const SizedBox(height: 20),
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: OwnerTheme.violetaMarca,
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: const Icon(Icons.admin_panel_settings_rounded, color: Colors.white, size: 30),
+                      ),
+                      const SizedBox(height: 16),
                       Text(
                         'Fernecito Owner',
                         style: OwnerTheme.baloo(
-                          fontSize: 28,
+                          fontSize: 26,
                           fontWeight: FontWeight.w900,
-                          color: FernecitoBrand.violetaLogo,
+                          color: OwnerTheme.texto,
                         ),
                       ),
                       const SizedBox(height: 6),
@@ -65,22 +70,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: OwnerTheme.baloo(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: FernecitoBrand.violetaLogo.withValues(alpha: 0.72),
+                          color: OwnerTheme.textoSecundario,
                         ),
                       ),
-                      const SizedBox(height: 32),
+                      const SizedBox(height: 28),
                       Container(
                         padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
                         decoration: BoxDecoration(
                           color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.12),
-                              blurRadius: 24,
-                              offset: const Offset(0, 8),
-                            ),
-                          ],
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: OwnerTheme.borde),
                         ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -89,6 +88,9 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _email,
                               keyboardType: TextInputType.emailAddress,
                               textInputAction: TextInputAction.next,
+                              autocorrect: false,
+                              enableSuggestions: false,
+                              spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
                               decoration: const InputDecoration(labelText: 'Email'),
                             ),
                             const SizedBox(height: 12),
@@ -96,6 +98,8 @@ class _LoginScreenState extends State<LoginScreen> {
                               controller: _password,
                               obscureText: true,
                               textInputAction: TextInputAction.done,
+                              enableSuggestions: false,
+                              spellCheckConfiguration: const SpellCheckConfiguration.disabled(),
                               onSubmitted: (_) => _loading ? null : _login(),
                               decoration: const InputDecoration(labelText: 'Contraseña'),
                             ),
@@ -116,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               child: FilledButton(
                                 onPressed: _loading ? null : _login,
                                 style: FilledButton.styleFrom(
-                                  backgroundColor: FernecitoBrand.violetaLogo,
+                                  backgroundColor: OwnerTheme.violetaMarca,
                                 ),
                                 child: _loading
                                     ? const SizedBox(
@@ -149,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: OwnerTheme.baloo(
                                   fontSize: 14,
                                   fontWeight: FontWeight.w700,
-                                  color: FernecitoBrand.violetaLogo,
+                                  color: OwnerTheme.violetaMarca,
                                 ),
                               ),
                             ),

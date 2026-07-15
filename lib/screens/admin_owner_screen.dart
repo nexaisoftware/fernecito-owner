@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
+import '../core/owner_layout.dart';
 import '../core/owner_theme.dart';
+import '../widgets/owner_desktop_refresh.dart';
 import '../services/owner_admin_service.dart';
+import '../widgets/owner_avatar.dart';
 import 'admin_detalle_screen.dart';
 
 /// Panel de administración:
@@ -84,11 +87,14 @@ class _AdminOwnerScreenState extends State<AdminOwnerScreen> {
   Widget build(BuildContext context) {
     final compact = MediaQuery.sizeOf(context).width < 560;
 
-    return ColoredBox(
-      color: OwnerTheme.fondo,
-      child: Column(
-        children: [
-          _header(compact),
+    return OwnerDesktopRefreshOverlay(
+      onRefresh: () => _buscar(_searchCtl.text),
+      loading: _loading,
+      child: ColoredBox(
+        color: OwnerTheme.fondo,
+        child: Column(
+          children: [
+            OwnerLayout.constrain(context: context, child: _header(compact)),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.all(12),
@@ -102,13 +108,27 @@ class _AdminOwnerScreenState extends State<AdminOwnerScreen> {
               ),
             ),
           Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _resultados.isEmpty
-                    ? _emptyState()
-                    : _lista(),
+            child: RefreshIndicator(
+              onRefresh: () => _buscar(_searchCtl.text),
+              color: OwnerTheme.violetaMarca,
+              child: _loading
+                  ? ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: const [
+                        SizedBox(height: 160),
+                        Center(child: CircularProgressIndicator()),
+                      ],
+                    )
+                  : _resultados.isEmpty
+                      ? ListView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          children: [_emptyState()],
+                        )
+                      : _lista(),
+            ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -236,6 +256,7 @@ class _AdminOwnerScreenState extends State<AdminOwnerScreen> {
 
   Widget _lista() {
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(14),
       itemCount: _resultados.length,
       separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -290,7 +311,11 @@ class _ItemCard extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Row(
             children: [
-              _Avatar(url: foto, fallback: username),
+              _AvatarWidget(
+                foto: foto,
+                fallback: username,
+                esLocal: esLocal,
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -401,29 +426,23 @@ class _ItemCard extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  final String? url;
+class _AvatarWidget extends StatelessWidget {
+  final String? foto;
   final String fallback;
-  const _Avatar({required this.url, required this.fallback});
+  final bool esLocal;
+
+  const _AvatarWidget({
+    required this.foto,
+    required this.fallback,
+    required this.esLocal,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final initial = fallback.isNotEmpty ? fallback[0].toUpperCase() : '?';
-    if (url != null && url!.isNotEmpty) {
-      return CircleAvatar(
-        radius: 22,
-        backgroundColor: const Color(0xFFEDE9FE),
-        backgroundImage: NetworkImage(url!),
-        onBackgroundImageError: (_, __) {},
-      );
-    }
-    return CircleAvatar(
-      radius: 22,
-      backgroundColor: const Color(0xFFEDE9FE),
-      child: Text(
-        initial,
-        style: GoogleFonts.inter(color: const Color(0xFF5A2EFF), fontWeight: FontWeight.w900),
-      ),
+    return OwnerAvatar(
+      fotoRaw: foto,
+      fallback: fallback,
+      esLocal: esLocal,
     );
   }
 }

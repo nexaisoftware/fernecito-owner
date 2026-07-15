@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 
 import '../app.dart';
 import '../core/motivos_pausa_cuenta.dart';
+import '../core/owner_theme.dart';
 import '../services/owner_admin_service.dart';
 
 /// Detalle completo de un local o usuario con:
@@ -657,35 +658,58 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
       ),
       body: Stack(
         children: [
-          _loading
-              ? const Center(child: CircularProgressIndicator())
-              : _error != null
-                  ? Center(child: Text(_error!))
-                  : _data == null
-                      ? const Center(child: Text('Sin datos'))
-                      : SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 900),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _bannerEstado(),
-                              if (_estaPausada) const SizedBox(height: 14),
-                              _accionesTop(),
-                              const SizedBox(height: 20),
-                              _statsGrid(),
-                              const SizedBox(height: 20),
-                              _infoTabla(),
-                              const SizedBox(height: 20),
-                              _seccionPublicaciones(),
-                              const SizedBox(height: 32),
+          RefreshIndicator(
+            onRefresh: _cargar,
+            color: OwnerTheme.violetaMarca,
+            child: _loading
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 200),
+                      Center(child: CircularProgressIndicator()),
+                    ],
+                  )
+                : _error != null
+                    ? ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          SizedBox(height: 120),
+                          Center(child: Text(_error!)),
+                        ],
+                      )
+                    : _data == null
+                        ? ListView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            children: const [
+                              SizedBox(height: 120),
+                              Center(child: Text('Sin datos')),
                             ],
+                          )
+                        : SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(20),
+                            child: Center(
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(maxWidth: 900),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    _bannerEstado(),
+                                    if (_estaPausada) const SizedBox(height: 14),
+                                    _accionesTop(),
+                                    const SizedBox(height: 20),
+                                    _statsGrid(),
+                                    const SizedBox(height: 20),
+                                    _infoTabla(),
+                                    const SizedBox(height: 20),
+                                    _seccionPublicaciones(),
+                                    const SizedBox(height: 32),
+                                  ],
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
-                    ),
+          ),
           if (_procesandoAccion)
             const Positioned(
               top: 0,

@@ -5,7 +5,10 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../core/owner_layout.dart';
 import '../core/owner_theme.dart';
+import '../widgets/owner_desktop_refresh.dart';
+import '../widgets/owner_avatar.dart';
 import '../services/owner_soporte_service.dart';
 
 /// Fila unificada para mostrar locales y usuarios en una sola lista.
@@ -50,27 +53,42 @@ class _SoporteOwnerScreenState extends State<SoporteOwnerScreen> {
       _loading = true;
       _error = null;
     });
+    final errores = <String>[];
+    var locales = <SoporteTicket>[];
+    var usuarios = <SoporteTicketUsuario>[];
+
     try {
-      final locales = OwnerSoporteService.instance.listar(
+      locales = await OwnerSoporteService.instance.listar(
         soloAbiertos: _soloAbiertos,
       );
-      final usuarios = OwnerSoporteService.instance.listarUsuarios(
-        soloAbiertos: _soloAbiertos,
-      );
-      final l = await locales;
-      final u = await usuarios;
-      if (!mounted) return;
-      setState(() {
-        _tickets = l;
-        _ticketsUsuarios = u;
-        _loading = false;
-      });
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = 'No se pudieron cargar los tickets: $e';
-        _loading = false;
-      });
+      errores.add('Tickets de locales: $e');
+    }
+
+    try {
+      usuarios = await OwnerSoporteService.instance.listarUsuarios(
+        soloAbiertos: _soloAbiertos,
+      );
+    } catch (e) {
+      errores.add('Tickets de usuarios: $e');
+    }
+
+    if (!mounted) return;
+    setState(() {
+      _tickets = locales;
+      _ticketsUsuarios = usuarios;
+      _loading = false;
+      if (locales.isEmpty && usuarios.isEmpty && errores.isNotEmpty) {
+        _error = errores.join('\n');
+      } else if (errores.isNotEmpty) {
+        _error = null;
+      }
+    });
+
+    if (errores.isNotEmpty && (locales.isNotEmpty || usuarios.isNotEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Algunos datos no cargaron: ${errores.first}')),
+      );
     }
   }
 
@@ -201,15 +219,22 @@ class _SoporteOwnerScreenState extends State<SoporteOwnerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: OwnerTheme.fondo,
-      child: RefreshIndicator(
-        onRefresh: _cargar,
-        child: Column(
-          children: [
-            _header(),
-            Expanded(child: _body()),
-          ],
+    return OwnerDesktopRefreshOverlay(
+      onRefresh: _cargar,
+      loading: _loading,
+      child: ColoredBox(
+        color: OwnerTheme.fondo,
+        child: RefreshIndicator(
+          onRefresh: _cargar,
+          child: Column(
+            children: [
+              OwnerLayout.constrain(
+                context: context,
+                child: _header(),
+              ),
+              Expanded(child: _body()),
+            ],
+          ),
         ),
       ),
     );
@@ -274,27 +299,39 @@ class _SoporteOwnerScreenState extends State<SoporteOwnerScreen> {
 
   Widget _body() {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator());
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 200),
+          Center(child: CircularProgressIndicator()),
+        ],
+      );
     }
     if (_error != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(Icons.error_outline, size: 48, color: Color(0xFFEF4444)),
-              const SizedBox(height: 12),
-              Text(_error!, textAlign: TextAlign.center),
-              const SizedBox(height: 16),
-              FilledButton.icon(
-                onPressed: _cargar,
-                icon: const Icon(Icons.refresh),
-                label: const Text('Reintentar'),
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          const SizedBox(height: 80),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Color(0xFFEF4444)),
+                  const SizedBox(height: 12),
+                  Text(_error!, textAlign: TextAlign.center),
+                  const SizedBox(height: 16),
+                  FilledButton.icon(
+                    onPressed: _cargar,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Reintentar'),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+        ],
       );
     }
     // Locales + usuarios en UNA sola lista, abiertas primero, más recientes arriba.
@@ -305,9 +342,17 @@ class _SoporteOwnerScreenState extends State<SoporteOwnerScreen> {
         _FilaSoporte(abierta: t.esAbierta, fecha: t.ultimaOperacion, usuario: t),
     ];
     if (filas.isEmpty) {
-      return _vacio(_soloAbiertos
-          ? 'No hay consultas abiertas'
-          : 'Sin tickets de soporte todavía');
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: [
+          SizedBox(
+            height: 320,
+            child: _vacio(_soloAbiertos
+                ? 'No hay consultas abiertas'
+                : 'Sin tickets de soporte todavía'),
+          ),
+        ],
+      );
     }
     filas.sort((a, b) {
       if (a.abierta != b.abierta) return a.abierta ? -1 : 1;
@@ -316,6 +361,7 @@ class _SoporteOwnerScreenState extends State<SoporteOwnerScreen> {
       return fb.compareTo(fa);
     });
     return ListView.separated(
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.all(16),
       itemCount: filas.length,
       separatorBuilder: (_, __) => const SizedBox(height: 12),
@@ -409,7 +455,11 @@ class _TicketCard extends StatelessWidget {
             // Header: avatar + username + chips
             Row(
               children: [
-                _Avatar(url: ticket.fotoPerfilUrl, fallback: ticket.localUsername ?? '?'),
+                OwnerAvatar(
+                  fotoRaw: ticket.fotoPerfilUrl,
+                  fallback: ticket.localUsername ?? '?',
+                  esLocal: true,
+                ),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Column(
@@ -601,36 +651,6 @@ class _TicketCard extends StatelessWidget {
   }
 }
 
-class _Avatar extends StatelessWidget {
-  final String? url;
-  final String fallback;
-  const _Avatar({required this.url, required this.fallback});
-
-  @override
-  Widget build(BuildContext context) {
-    final initial = fallback.isNotEmpty ? fallback[0].toUpperCase() : '?';
-    if (url != null && url!.isNotEmpty) {
-      return CircleAvatar(
-        radius: 22,
-        backgroundColor: const Color(0xFFEDE9FE),
-        backgroundImage: NetworkImage(url!),
-        onBackgroundImageError: (_, __) {},
-      );
-    }
-    return CircleAvatar(
-      radius: 22,
-      backgroundColor: const Color(0xFFEDE9FE),
-      child: Text(
-        initial,
-        style: GoogleFonts.inter(
-          color: const Color(0xFF5A2EFF),
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-    );
-  }
-}
-
 class _Chip extends StatelessWidget {
   final String label;
   final Color color;
@@ -707,7 +727,12 @@ class _UsuarioTicketCard extends StatelessWidget {
           // Header: usuario + estado
           Row(
             children: [
-              const Icon(Icons.person_rounded, color: OwnerTheme.violetaMarca),
+              OwnerAvatar(
+                fotoRaw: ticket.fotoPerfilUrl,
+                fallback: ticket.username ?? ticket.nombre ?? '?',
+                esLocal: false,
+                radius: 20,
+              ),
               const SizedBox(width: 10),
               Expanded(
                 child: Column(

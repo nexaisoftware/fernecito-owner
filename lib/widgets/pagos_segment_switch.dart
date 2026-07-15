@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../core/owner_theme.dart';
 import '../core/pagos_subseccion.dart';
@@ -30,9 +31,9 @@ class PagosSegmentSwitch extends StatelessWidget {
                   ? null
                   : Text(
                       s.label,
-                      style: OwnerTheme.baloo(
+                      style: GoogleFonts.inter(
                         fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
               tooltip: compact ? s.label : null,

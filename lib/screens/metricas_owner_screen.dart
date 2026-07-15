@@ -2,7 +2,9 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../core/owner_layout.dart';
 import '../core/owner_theme.dart';
+import '../widgets/owner_desktop_refresh.dart';
 import '../services/owner_metrics_service.dart';
 
 class MetricasOwnerScreen extends StatefulWidget {
@@ -70,15 +72,30 @@ class _MetricasOwnerScreenState extends State<MetricasOwnerScreen> {
   Widget build(BuildContext context) {
     final pad = MediaQuery.sizeOf(context).width < 600 ? 16.0 : 20.0;
 
-    return ColoredBox(
-      color: OwnerTheme.fondo,
-      child: RefreshIndicator(
+    return OwnerDesktopRefreshOverlay(
+      onRefresh: _cargar,
+      loading: _loading,
+      child: ColoredBox(
+        color: OwnerTheme.fondo,
+        child: RefreshIndicator(
         onRefresh: _cargar,
         color: OwnerTheme.violetaMarca,
         child: _loading
-            ? const Center(child: CircularProgressIndicator())
+            ? ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: const [
+                  SizedBox(height: 200),
+                  Center(child: CircularProgressIndicator()),
+                ],
+              )
             : _error != null
-                ? _ErrorView(error: _error!, onRetry: _cargar)
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: 120),
+                      _ErrorView(error: _error!, onRetry: _cargar),
+                    ],
+                  )
                 : LayoutBuilder(
                     builder: (ctx, c) {
                       final width = c.maxWidth;
@@ -91,8 +108,10 @@ class _MetricasOwnerScreenState extends State<MetricasOwnerScreen> {
                                   : 2;
                       return SingleChildScrollView(
                         physics: const AlwaysScrollableScrollPhysics(),
-                        padding: EdgeInsets.fromLTRB(pad, 20, pad, 32),
-                        child: Column(
+                        child: OwnerLayout.constrain(
+                          context: ctx,
+                          padding: EdgeInsets.fromLTRB(pad, 20, pad, 32),
+                          child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             _header(),
@@ -164,9 +183,11 @@ class _MetricasOwnerScreenState extends State<MetricasOwnerScreen> {
                             ]),
                           ],
                         ),
+                        ),
                       );
                     },
                   ),
+        ),
       ),
     );
   }

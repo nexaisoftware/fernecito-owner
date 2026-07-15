@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'core/config_push_web.dart';
+import 'core/servicio_push_owner.dart';
+
+@pragma('vm:entry-point')
+Future<void> _fcmBackgroundHandler(RemoteMessage message) async {}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,6 +26,17 @@ Future<void> main() async {
     );
   }
   await Supabase.initialize(url: url, anonKey: clave);
+
+  if (kIsWeb && ConfigPushWeb.habilitada) {
+    try {
+      await Firebase.initializeApp(options: ConfigPushWeb.options);
+      FirebaseMessaging.onBackgroundMessage(_fcmBackgroundHandler);
+      await ServicioPushOwner.instancia.inicializar();
+    } catch (e) {
+      debugPrint('⚠️ Firebase/push owner no inicializado: $e');
+    }
+  }
+
   runApp(const OwnerApp());
 }
 

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/motivos_pausa_cuenta.dart';
+import '../core/owner_layout.dart';
 import '../core/owner_theme.dart';
+import '../widgets/owner_desktop_refresh.dart';
 import '../services/owner_admin_service.dart';
 import 'admin_detalle_screen.dart';
 
@@ -161,6 +163,61 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
     }
   }
 
+  Future<void> _ocultarEvento(Map<String, dynamic> item) async {
+    final id = item['target_id']?.toString() ?? '';
+    final titulo = item['evento_titulo']?.toString() ??
+        item['nombre']?.toString() ??
+        'esta publicación';
+    if (id.isEmpty) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Ocultar publicación'),
+        content: Text(
+          'Vas a sacar "$titulo" de la cartelera y marcar sus reportes como accionados.\n\n'
+          'Usalo para flyers, nombres o contenido inapropiado. No pausa el local.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            child: const Text('Ocultar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _procesando = true);
+    try {
+      final res = await OwnerAdminService.instance.ocultarEventoReportado(
+        idEvento: id,
+        motivo:
+            'Oculto desde Moderación. Reportes: ${item['cantidad_reportes']}. Motivo top: ${item['motivo_top_label']}.',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res['ok'] == true
+                ? 'Publicación oculta'
+                : (res['error']?.toString() ?? 'Error'),
+          ),
+        ),
+      );
+      if (res['ok'] == true) await _cargar();
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
   void _abrirDetalle(Map<String, dynamic> item) {
     var tipo = item['target_tipo']?.toString() ?? 'usuario';
     var id = item['target_id']?.toString() ?? '';
@@ -193,34 +250,55 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: OwnerTheme.fondo,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Container(
-            color: OwnerTheme.superficie,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Moderacion',
-                    style: OwnerTheme.baloo(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: OwnerTheme.texto,
+    return OwnerDesktopRefreshOverlay(
+      onRefresh: _cargar,
+      loading: _loading,
+      child: ColoredBox(
+        color: OwnerTheme.fondo,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            OwnerLayout.constrain(
+              context: context,
+              child: Container(
+                color: OwnerTheme.superficie,
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Moderación',
+                            style: OwnerTheme.baloo(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w900,
+                              color: OwnerTheme.texto,
+                            ),
+                          ),
+                          Text(
+                            _loading
+                                ? 'Revisando reportes...'
+                                : '${_items.length} caso${_items.length == 1 ? '' : 's'} para revisar',
+                            style: OwnerTheme.baloo(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: OwnerTheme.textoSecundario,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
+                    IconButton.filledTonal(
+                      onPressed: _loading ? null : _cargar,
+                      icon: const Icon(Icons.refresh_rounded),
+                      tooltip: 'Actualizar',
+                    ),
+                  ],
                 ),
-                IconButton(
-                  tooltip: 'Actualizar',
-                  onPressed: _loading ? null : _cargar,
-                  icon: const Icon(Icons.refresh_rounded),
-                ),
-              ],
+              ),
             ),
-          ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.all(14),
@@ -233,10 +311,22 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator())
                 : _items.isEmpty
-                ? const Center(child: Text('Sin perfiles reportados'))
+                ? RefreshIndicator(
+                    onRefresh: _cargar,
+                    color: OwnerTheme.violetaMarca,
+                    child: ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.all(14),
+                      children: const [
+                        SizedBox(height: 120),
+                        Center(child: Text('Sin perfiles reportados')),
+                      ],
+                    ),
+                  )
                 : RefreshIndicator(
                     onRefresh: _cargar,
                     child: ListView.separated(
+                      physics: const AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.all(14),
                       itemCount: _items.length,
                       separatorBuilder: (_, index) => const SizedBox(height: 8),
@@ -245,12 +335,14 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
                         procesando: _procesando,
                         onTap: () => _abrirDetalle(_items[i]),
                         onPausar: () => _pausar(_items[i]),
+                        onOcultarEvento: () => _ocultarEvento(_items[i]),
                         onLimpiar: () => _limpiarReportes(_items[i]),
                       ),
                     ),
                   ),
           ),
         ],
+        ),
       ),
     );
   }
@@ -262,6 +354,7 @@ class _ReporteCard extends StatelessWidget {
     required this.procesando,
     required this.onTap,
     required this.onPausar,
+    required this.onOcultarEvento,
     required this.onLimpiar,
   });
 
@@ -269,6 +362,7 @@ class _ReporteCard extends StatelessWidget {
   final bool procesando;
   final VoidCallback onTap;
   final VoidCallback onPausar;
+  final VoidCallback onOcultarEvento;
   final VoidCallback onLimpiar;
 
   @override
@@ -431,7 +525,7 @@ class _ReporteCard extends StatelessWidget {
                     label: const Text('Detalle'),
                   ),
                   FilledButton.icon(
-                    onPressed: procesando || estado == 'pausada'
+                    onPressed: procesando || esEvento || estado == 'pausada'
                         ? null
                         : onPausar,
                     icon: const Icon(Icons.block_rounded, size: 16),
@@ -440,6 +534,21 @@ class _ReporteCard extends StatelessWidget {
                       backgroundColor: const Color(0xFFEF4444),
                     ),
                   ),
+                  if (esEvento)
+                    FilledButton.icon(
+                      onPressed: procesando || item['evento_estado'] == 'cancelado'
+                          ? null
+                          : onOcultarEvento,
+                      icon: const Icon(Icons.visibility_off_rounded, size: 16),
+                      label: Text(
+                        item['evento_estado'] == 'cancelado'
+                            ? 'Oculta'
+                            : 'Ocultar publicación',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                      ),
+                    ),
                   TextButton.icon(
                     onPressed: procesando ? null : onLimpiar,
                     icon: const Icon(Icons.delete_sweep_rounded, size: 16),

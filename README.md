@@ -2,6 +2,12 @@
 
 Internal/admin manager for Fernecito platform operations.
 
+[![PWA](https://img.shields.io/badge/PWA-Live-5A0FC8?logo=pwa&logoColor=white)](https://fernecitoapp.online)
+![Flutter](https://img.shields.io/badge/Flutter-02569B?logo=flutter&logoColor=white)
+![Dart](https://img.shields.io/badge/Dart-0175C2?logo=dart&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white)
+![Vercel](https://img.shields.io/badge/Vercel-000000?logo=vercel&logoColor=white)
+
 Live PWA: [fernecitoapp.online](https://fernecitoapp.online)
 
 ## What It Does
@@ -55,6 +61,13 @@ flutter run -d chrome \
 ```
 
 The deploy script builds locally, prepares Vercel prebuilt output and deploys the production PWA.
+
+## Engineering Highlights
+
+- **Owner-gated by design.** Administrative actions are separated from user- and venue-facing flows and authorized at the edge, never trusted from the client.
+- **Operations dashboard.** Platform metrics, subscription/payment review, moderation queues and support tickets in one internal surface.
+- **Targeted push at scale.** Compose and send geo-segmented, deduplicated broadcasts across the ecosystem's apps.
+- **Moderation & support.** Review reported accounts/events and resolve support cases with clear, auditable state transitions.
 
 ## Why It Matters
 
