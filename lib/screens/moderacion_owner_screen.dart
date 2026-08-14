@@ -52,6 +52,9 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
     var tipo = item['target_tipo']?.toString() ?? '';
     var id = item['target_id']?.toString() ?? '';
     final esEvento = tipo == 'evento';
+    final esSquad = tipo == 'squad';
+    final esPlan = tipo == 'plan';
+    if (esSquad || esPlan) return;
     // Un evento reportado se modera pausando al LOCAL dueño del evento.
     if (esEvento) {
       tipo = 'local';
@@ -165,7 +168,8 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
 
   Future<void> _ocultarEvento(Map<String, dynamic> item) async {
     final id = item['target_id']?.toString() ?? '';
-    final titulo = item['evento_titulo']?.toString() ??
+    final titulo =
+        item['evento_titulo']?.toString() ??
         item['nombre']?.toString() ??
         'esta publicación';
     if (id.isEmpty) return;
@@ -218,6 +222,59 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
     }
   }
 
+  Future<void> _ocultarPlan(Map<String, dynamic> item) async {
+    final id = item['target_id']?.toString() ?? '';
+    final titulo = item['nombre']?.toString() ?? 'este plan';
+    if (id.isEmpty) return;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Ocultar plan'),
+        content: Text(
+          'Vas a cancelar "$titulo" y sacarlo del feed por reportes.\n\n'
+          'Usalo si ves riesgo, contenido dañino, actividad peligrosa o algo raro.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            child: const Text('Ocultar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _procesando = true);
+    try {
+      final res = await OwnerAdminService.instance.ocultarPlanReportado(
+        idPlan: id,
+        motivo:
+            'Oculto desde Moderación. Reportes: ${item['cantidad_reportes']}. Motivo top: ${item['motivo_top_label']}.',
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            res['ok'] == true
+                ? 'Plan oculto'
+                : (res['error']?.toString() ?? 'Error'),
+          ),
+        ),
+      );
+      if (res['ok'] == true) await _cargar();
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
   void _abrirDetalle(Map<String, dynamic> item) {
     var tipo = item['target_tipo']?.toString() ?? 'usuario';
     var id = item['target_id']?.toString() ?? '';
@@ -233,6 +290,22 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
           item['evento_local_username']?.toString() ??
           item['evento_local_nombre']?.toString() ??
           'Local';
+    }
+    if (tipo == 'squad') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reporte de squad recibido. Revisalo desde la lista.'),
+        ),
+      );
+      return;
+    }
+    if (tipo == 'plan') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Reporte de plan recibido. Revisalo desde la lista.'),
+        ),
+      );
+      return;
     }
     if (id.isEmpty) return;
     Navigator.of(context)
@@ -299,49 +372,51 @@ class _ModeracionOwnerScreenState extends State<ModeracionOwnerScreen> {
                 ),
               ),
             ),
-          if (_error != null)
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Text(
-                _error!,
-                style: GoogleFonts.inter(color: Colors.red.shade700),
+            if (_error != null)
+              Padding(
+                padding: const EdgeInsets.all(14),
+                child: Text(
+                  _error!,
+                  style: GoogleFonts.inter(color: Colors.red.shade700),
+                ),
               ),
-            ),
-          Expanded(
-            child: _loading
-                ? const Center(child: CircularProgressIndicator())
-                : _items.isEmpty
-                ? RefreshIndicator(
-                    onRefresh: _cargar,
-                    color: OwnerTheme.violetaMarca,
-                    child: ListView(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(14),
-                      children: const [
-                        SizedBox(height: 120),
-                        Center(child: Text('Sin perfiles reportados')),
-                      ],
-                    ),
-                  )
-                : RefreshIndicator(
-                    onRefresh: _cargar,
-                    child: ListView.separated(
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      padding: const EdgeInsets.all(14),
-                      itemCount: _items.length,
-                      separatorBuilder: (_, index) => const SizedBox(height: 8),
-                      itemBuilder: (_, i) => _ReporteCard(
-                        item: _items[i],
-                        procesando: _procesando,
-                        onTap: () => _abrirDetalle(_items[i]),
-                        onPausar: () => _pausar(_items[i]),
-                        onOcultarEvento: () => _ocultarEvento(_items[i]),
-                        onLimpiar: () => _limpiarReportes(_items[i]),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : _items.isEmpty
+                  ? RefreshIndicator(
+                      onRefresh: _cargar,
+                      color: OwnerTheme.violetaMarca,
+                      child: ListView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(14),
+                        children: const [
+                          SizedBox(height: 120),
+                          Center(child: Text('Sin perfiles reportados')),
+                        ],
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _cargar,
+                      child: ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.all(14),
+                        itemCount: _items.length,
+                        separatorBuilder: (_, index) =>
+                            const SizedBox(height: 8),
+                        itemBuilder: (_, i) => _ReporteCard(
+                          item: _items[i],
+                          procesando: _procesando,
+                          onTap: () => _abrirDetalle(_items[i]),
+                          onPausar: () => _pausar(_items[i]),
+                          onOcultarEvento: () => _ocultarEvento(_items[i]),
+                          onOcultarPlan: () => _ocultarPlan(_items[i]),
+                          onLimpiar: () => _limpiarReportes(_items[i]),
+                        ),
                       ),
                     ),
-                  ),
-          ),
-        ],
+            ),
+          ],
         ),
       ),
     );
@@ -355,6 +430,7 @@ class _ReporteCard extends StatelessWidget {
     required this.onTap,
     required this.onPausar,
     required this.onOcultarEvento,
+    required this.onOcultarPlan,
     required this.onLimpiar,
   });
 
@@ -363,6 +439,7 @@ class _ReporteCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onPausar;
   final VoidCallback onOcultarEvento;
+  final VoidCallback onOcultarPlan;
   final VoidCallback onLimpiar;
 
   @override
@@ -377,10 +454,14 @@ class _ReporteCard extends StatelessWidget {
         ? item['reportantes'] as List
         : const [];
     final esEvento = tipo == 'evento';
+    final esSquad = tipo == 'squad';
+    final esPlan = tipo == 'plan';
     final flyer = item['evento_flyer']?.toString() ?? '';
     final eventoTitulo = item['evento_titulo']?.toString() ?? nombre;
     final localUser = item['evento_local_username']?.toString() ?? '';
     final localNombre = item['evento_local_nombre']?.toString() ?? '';
+    final planEstado = item['plan_estado']?.toString() ?? estado;
+    final planLocal = item['plan_local_nombre']?.toString() ?? '';
 
     return Material(
       color: Colors.white,
@@ -434,6 +515,10 @@ class _ReporteCard extends StatelessWidget {
                     Icon(
                       tipo == 'local'
                           ? Icons.storefront_rounded
+                          : esSquad
+                          ? Icons.groups_rounded
+                          : esPlan
+                          ? Icons.event_available_rounded
                           : Icons.person_rounded,
                       color: urgente
                           ? const Color(0xFFEF4444)
@@ -447,6 +532,8 @@ class _ReporteCard extends StatelessWidget {
                         Text(
                           esEvento
                               ? eventoTitulo
+                              : esPlan
+                              ? (nombre.isNotEmpty ? nombre : 'Plan reportado')
                               : (username.isNotEmpty ? '@$username' : nombre),
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
@@ -458,6 +545,10 @@ class _ReporteCard extends StatelessWidget {
                         Text(
                           esEvento
                               ? 'Evento · ${localUser.isNotEmpty ? '@$localUser' : (localNombre.isNotEmpty ? localNombre : 'local')} · $count reportes'
+                              : esPlan
+                              ? 'Plan · $planEstado · ${planLocal.isNotEmpty ? '$planLocal · ' : ''}$count reportes'
+                              : esSquad
+                              ? 'Squad · $estado · $count reportes'
                               : '$tipo · $estado · $count reportes',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -520,12 +611,19 @@ class _ReporteCard extends StatelessWidget {
                 runSpacing: 8,
                 children: [
                   OutlinedButton.icon(
-                    onPressed: onTap,
+                    onPressed: (esSquad || esPlan) ? null : onTap,
                     icon: const Icon(Icons.open_in_new_rounded, size: 16),
-                    label: const Text('Detalle'),
+                    label: Text(
+                      (esSquad || esPlan) ? 'Sin detalle' : 'Detalle',
+                    ),
                   ),
                   FilledButton.icon(
-                    onPressed: procesando || esEvento || estado == 'pausada'
+                    onPressed:
+                        procesando ||
+                            esEvento ||
+                            esSquad ||
+                            esPlan ||
+                            estado == 'pausada'
                         ? null
                         : onPausar,
                     icon: const Icon(Icons.block_rounded, size: 16),
@@ -536,7 +634,8 @@ class _ReporteCard extends StatelessWidget {
                   ),
                   if (esEvento)
                     FilledButton.icon(
-                      onPressed: procesando || item['evento_estado'] == 'cancelado'
+                      onPressed:
+                          procesando || item['evento_estado'] == 'cancelado'
                           ? null
                           : onOcultarEvento,
                       icon: const Icon(Icons.visibility_off_rounded, size: 16),
@@ -544,6 +643,19 @@ class _ReporteCard extends StatelessWidget {
                         item['evento_estado'] == 'cancelado'
                             ? 'Oculta'
                             : 'Ocultar publicación',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFEF4444),
+                      ),
+                    ),
+                  if (esPlan)
+                    FilledButton.icon(
+                      onPressed: procesando || planEstado == 'cancelado'
+                          ? null
+                          : onOcultarPlan,
+                      icon: const Icon(Icons.visibility_off_rounded, size: 16),
+                      label: Text(
+                        planEstado == 'cancelado' ? 'Oculto' : 'Ocultar plan',
                       ),
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFFEF4444),

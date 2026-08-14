@@ -66,13 +66,16 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     }
   }
 
-  Map<String, dynamic> get _perfil =>
-      _data?['perfil'] is Map ? Map<String, dynamic>.from(_data!['perfil'] as Map) : {};
-  Map<String, dynamic> get _stats =>
-      _data?['stats'] is Map ? Map<String, dynamic>.from(_data!['stats'] as Map) : {};
+  Map<String, dynamic> get _perfil => _data?['perfil'] is Map
+      ? Map<String, dynamic>.from(_data!['perfil'] as Map)
+      : {};
+  Map<String, dynamic> get _stats => _data?['stats'] is Map
+      ? Map<String, dynamic>.from(_data!['stats'] as Map)
+      : {};
   String get _email => _data?['email']?.toString() ?? '-';
 
-  bool get _estaPausada => (_perfil['estado_cuenta']?.toString() ?? 'activa') == 'pausada';
+  bool get _estaPausada =>
+      (_perfil['estado_cuenta']?.toString() ?? 'activa') == 'pausada';
   bool get _esPionero => _perfil['es_pionero'] == true;
 
   Future<void> _invitarProgramaPioneros() async {
@@ -91,7 +94,9 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
           builder: (context, setSheet) {
             Future<void> generar() async {
               setSheet(() => generando = true);
-              final res = await OwnerAdminService.instance.generarCodigoPionero(widget.targetId);
+              final res = await OwnerAdminService.instance.generarCodigoPionero(
+                widget.targetId,
+              );
               if (!mounted) return;
               setSheet(() {
                 generando = false;
@@ -119,7 +124,9 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
               await Clipboard.setData(ClipboardData(text: msg));
               if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Mensaje copiado al portapapeles')),
+                const SnackBar(
+                  content: Text('Mensaje copiado al portapapeles'),
+                ),
               );
             }
 
@@ -132,12 +139,19 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                   children: [
                     Text(
                       'Programa Pioneros',
-                      style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900),
+                      style: GoogleFonts.inter(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Generá un código único para este local. Solo él puede canjearlo.',
-                      style: GoogleFonts.inter(fontSize: 13, color: Colors.black54, height: 1.35),
+                      style: GoogleFonts.inter(
+                        fontSize: 13,
+                        color: Colors.black54,
+                        height: 1.35,
+                      ),
                     ),
                     if (codigoGenerado != null) ...[
                       const SizedBox(height: 16),
@@ -166,10 +180,17 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                           ? const SizedBox(
                               width: 16,
                               height: 16,
-                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
                             )
                           : const Icon(Icons.qr_code_2),
-                      label: Text(codigoGenerado == null ? 'Generar código Pionero' : 'Regenerar código'),
+                      label: Text(
+                        codigoGenerado == null
+                            ? 'Generar código Pionero'
+                            : 'Regenerar código',
+                      ),
                     ),
                     if (codigoGenerado != null) ...[
                       const SizedBox(height: 10),
@@ -194,14 +215,16 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     final ok = await _confirmar(
       'Quitar Programa Pioneros',
       'Se revocará el estado Pionero de este local. No se modifica su plan de suscripción '
-      'ni la verificación. ¿Continuar?',
+          'ni la verificación. ¿Continuar?',
       'Quitar Pionero',
       destructiva: true,
     );
     if (!ok) return;
     setState(() => _procesandoAccion = true);
     try {
-      final res = await OwnerAdminService.instance.quitarPionero(widget.targetId);
+      final res = await OwnerAdminService.instance.quitarPionero(
+        widget.targetId,
+      );
       if (!mounted) return;
       _showResult(res, 'Estado Pionero revocado');
       if (res['ok'] == true) {
@@ -209,10 +232,11 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      _showResult(
-        {'ok': false, 'code': 'unexpected', 'error': e.toString()},
-        '',
-      );
+      _showResult({
+        'ok': false,
+        'code': 'unexpected',
+        'error': e.toString(),
+      }, '');
     } finally {
       if (mounted) setState(() => _procesandoAccion = false);
     }
@@ -235,7 +259,8 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
             children: [
               Center(
                 child: Container(
-                  width: 40, height: 4,
+                  width: 40,
+                  height: 4,
                   margin: const EdgeInsets.only(bottom: 16),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade300,
@@ -243,11 +268,18 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                   ),
                 ),
               ),
-              Text('Ayuda con contraseña',
-                  style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w900)),
+              Text(
+                'Ayuda con contraseña',
+                style: GoogleFonts.inter(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text('Elegí cómo querés ayudar al usuario',
-                  style: GoogleFonts.inter(fontSize: 12.5, color: Colors.black54)),
+              Text(
+                'Elegí cómo querés ayudar al usuario',
+                style: GoogleFonts.inter(fontSize: 12.5, color: Colors.black54),
+              ),
               const SizedBox(height: 16),
               _OpcionResetCard(
                 icono: Icons.lock_reset,
@@ -295,7 +327,9 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
   Future<void> _resetPasswordEmail() async {
     setState(() => _procesandoAccion = true);
     try {
-      final res = await OwnerAdminService.instance.resetPassword(widget.targetId);
+      final res = await OwnerAdminService.instance.resetPassword(
+        widget.targetId,
+      );
       _showResult(res, 'Email de reset enviado a $_email');
     } finally {
       if (mounted) setState(() => _procesandoAccion = false);
@@ -305,7 +339,9 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
   Future<void> _generarPassTemporal() async {
     setState(() => _procesandoAccion = true);
     try {
-      final res = await OwnerAdminService.instance.setPasswordTemporal(widget.targetId);
+      final res = await OwnerAdminService.instance.setPasswordTemporal(
+        widget.targetId,
+      );
       if (!mounted) return;
       if (res['ok'] != true) {
         _showResult(res, '');
@@ -319,7 +355,8 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
   }
 
   Future<void> _mostrarDialogPassGenerada(String pass) async {
-    final username = _perfil['local_username']?.toString() ??
+    final username =
+        _perfil['local_username']?.toString() ??
         _perfil['username']?.toString() ??
         '';
     final mensajeTemplate =
@@ -352,20 +389,30 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                       color: const Color(0xFF22C55E).withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.check_circle,
-                        color: Color(0xFF15803D), size: 22),
+                    child: const Icon(
+                      Icons.check_circle,
+                      color: Color(0xFF15803D),
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text('Pass temporal generada',
-                        style: GoogleFonts.inter(
-                            fontSize: 16, fontWeight: FontWeight.w900)),
+                    child: Text(
+                      'Pass temporal generada',
+                      style: GoogleFonts.inter(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 14),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 12,
+                ),
                 decoration: BoxDecoration(
                   color: const Color(0xFFFEF3C7),
                   borderRadius: BorderRadius.circular(10),
@@ -387,12 +434,17 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.copy, size: 18, color: Color(0xFFB45309)),
+                      icon: const Icon(
+                        Icons.copy,
+                        size: 18,
+                        color: Color(0xFFB45309),
+                      ),
                       tooltip: 'Copiar solo la pass',
                       onPressed: () async {
+                        final messenger = ScaffoldMessenger.of(context);
                         await Clipboard.setData(ClipboardData(text: pass));
                         if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
+                          messenger.showSnackBar(
                             const SnackBar(content: Text('Pass copiada')),
                           );
                         }
@@ -405,17 +457,23 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
               Text(
                 'Esta pass NO se vuelve a mostrar. Copiala y mandásela al usuario por soporte ahora.',
                 style: GoogleFonts.inter(
-                    fontSize: 12, color: const Color(0xFFB91C1C), fontWeight: FontWeight.w600),
+                  fontSize: 12,
+                  color: const Color(0xFFB91C1C),
+                  fontWeight: FontWeight.w600,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 18),
               FilledButton.icon(
                 onPressed: () async {
+                  final messenger = ScaffoldMessenger.of(context);
                   await Clipboard.setData(ClipboardData(text: mensajeTemplate));
                   if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    messenger.showSnackBar(
                       const SnackBar(
-                        content: Text('Mensaje copiado — pegalo en WhatsApp/email'),
+                        content: Text(
+                          'Mensaje copiado — pegalo en WhatsApp/email',
+                        ),
                       ),
                     );
                   }
@@ -425,7 +483,10 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                 style: FilledButton.styleFrom(
                   backgroundColor: const Color(0xFF5A2EFF),
                   padding: const EdgeInsets.symmetric(vertical: 13),
-                  textStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w800),
+                  textStyle: GoogleFonts.inter(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
@@ -463,7 +524,9 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
         targetId: widget.targetId,
         tipo: widget.tipo,
         pausar: pausar,
-        motivo: notaInterna?.trim().isEmpty == true ? null : notaInterna?.trim(),
+        motivo: notaInterna?.trim().isEmpty == true
+            ? null
+            : notaInterna?.trim(),
         motivoPublico: motivoPublico,
       );
       if (!mounted) return;
@@ -473,10 +536,11 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
       }
     } catch (e) {
       if (!mounted) return;
-      _showResult(
-        {'ok': false, 'code': 'unexpected', 'error': e.toString()},
-        '',
-      );
+      _showResult({
+        'ok': false,
+        'code': 'unexpected',
+        'error': e.toString(),
+      }, '');
     } finally {
       if (mounted) setState(() => _procesandoAccion = false);
     }
@@ -486,7 +550,7 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     final ok = await _confirmar(
       '⚠️ Eliminar cuenta',
       'Esta acción es PERMANENTE. Se borrará la cuenta auth + todo el perfil + cascade '
-      '(eventos, reviews, pagos, etc).\n\n¿Estás seguro?',
+          '(eventos, reviews, pagos, etc).\n\n¿Estás seguro?',
       'Sí, eliminar',
       destructiva: true,
     );
@@ -502,7 +566,9 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     if (!ok2) return;
     setState(() => _procesandoAccion = true);
     try {
-      final res = await OwnerAdminService.instance.eliminarCuenta(widget.targetId);
+      final res = await OwnerAdminService.instance.eliminarCuenta(
+        widget.targetId,
+      );
       _showResult(res, 'Cuenta eliminada');
       if (res['ok'] == true && mounted) {
         Navigator.of(context).pop();
@@ -512,45 +578,58 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     }
   }
 
-  Future<bool> _confirmar(String titulo, String contenido, String btnLabel,
-      {bool destructiva = false, String? requiereTexto}) async {
+  Future<bool> _confirmar(
+    String titulo,
+    String contenido,
+    String btnLabel, {
+    bool destructiva = false,
+    String? requiereTexto,
+  }) async {
     final ctl = TextEditingController();
     final res = await showDialog<bool>(
       context: context,
-      builder: (_) => StatefulBuilder(builder: (ctx, setSt) {
-        final coincide = requiereTexto == null || ctl.text.trim() == requiereTexto;
-        return AlertDialog(
-          title: Text(titulo),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(contenido),
-              if (requiereTexto != null) ...[
-                const SizedBox(height: 12),
-                TextField(
-                  controller: ctl,
-                  onChanged: (_) => setSt(() {}),
-                  decoration: InputDecoration(
-                    hintText: requiereTexto,
-                    border: const OutlineInputBorder(),
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setSt) {
+          final coincide =
+              requiereTexto == null || ctl.text.trim() == requiereTexto;
+          return AlertDialog(
+            title: Text(titulo),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(contenido),
+                if (requiereTexto != null) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: ctl,
+                    onChanged: (_) => setSt(() {}),
+                    decoration: InputDecoration(
+                      hintText: requiereTexto,
+                      border: const OutlineInputBorder(),
+                    ),
                   ),
-                ),
+                ],
               ],
-            ],
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-            FilledButton(
-              onPressed: coincide ? () => Navigator.pop(ctx, true) : null,
-              style: destructiva
-                  ? FilledButton.styleFrom(backgroundColor: const Color(0xFFDC2626))
-                  : null,
-              child: Text(btnLabel),
             ),
-          ],
-        );
-      }),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: coincide ? () => Navigator.pop(ctx, true) : null,
+                style: destructiva
+                    ? FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFFDC2626),
+                      )
+                    : null,
+                child: Text(btnLabel),
+              ),
+            ],
+          );
+        },
+      ),
     );
     return res == true;
   }
@@ -574,26 +653,44 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                   'La nota interna solo la ves vos en Owner.',
                 ),
                 const SizedBox(height: 14),
-                Text('Motivo para el usuario',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800)),
+                Text(
+                  'Motivo para el usuario',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 DropdownButtonFormField<String>(
-                  value: motivoSeleccionado,
-                  decoration: const InputDecoration(border: OutlineInputBorder()),
+                  initialValue: motivoSeleccionado,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                  ),
                   items: motivosPausaPublicos
-                      .map((m) => DropdownMenuItem(value: m.codigo, child: Text(m.etiqueta)))
+                      .map(
+                        (m) => DropdownMenuItem(
+                          value: m.codigo,
+                          child: Text(m.etiqueta),
+                        ),
+                      )
                       .toList(),
                   onChanged: (v) => setSt(() => motivoSeleccionado = v),
                 ),
                 const SizedBox(height: 14),
-                Text('Nota interna (privada)',
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w800)),
+                Text(
+                  'Nota interna (privada)',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
                 const SizedBox(height: 6),
                 TextField(
                   controller: notaCtl,
                   maxLines: 3,
                   decoration: const InputDecoration(
-                    hintText: 'Memo para el equipo: detalle del caso, links, etc.',
+                    hintText:
+                        'Memo para el equipo: detalle del caso, links, etc.',
                     border: OutlineInputBorder(),
                   ),
                 ),
@@ -601,15 +698,20 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancelar'),
+            ),
             FilledButton(
               onPressed: motivoSeleccionado == null
                   ? null
                   : () => Navigator.pop(ctx, {
-                        'motivo_publico': motivoSeleccionado!,
-                        'nota': notaCtl.text.trim(),
-                      }),
-              style: FilledButton.styleFrom(backgroundColor: const Color(0xFFE67E22)),
+                      'motivo_publico': motivoSeleccionado!,
+                      'nota': notaCtl.text.trim(),
+                    }),
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFE67E22),
+              ),
               child: const Text('Suspender'),
             ),
           ],
@@ -629,21 +731,26 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     } else if (code == 'motivo_publico_requerido') {
       fallo = 'Elegí un motivo público para el usuario.';
     } else if (code == 'not_found') {
-      fallo = 'No se encontró el perfil en la base. ¿El usuario completó registro?';
+      fallo =
+          'No se encontró el perfil en la base. ¿El usuario completó registro?';
     } else if (code == 'no_autorizado') {
-      fallo = 'Sin permisos de owner. Cerrá sesión y entrá con una cuenta owner activa.';
+      fallo =
+          'Sin permisos de owner. Cerrá sesión y entrá con una cuenta owner activa.';
     } else if (code == 'rpc_not_found') {
       fallo = 'Falta la migración de pausa en Supabase (admin_pausar_cuenta).';
     } else if (code == 'tipo_invalido') {
       fallo = 'Tipo de cuenta inválido (esperado usuario o local).';
     }
-    final messenger = ownerScaffoldMessengerKey.currentState ?? ScaffoldMessenger.of(context);
-    messenger.showSnackBar(SnackBar(
-      content: Text(ok ? successMsg : fallo),
-      backgroundColor: ok ? const Color(0xFF15803D) : const Color(0xFFDC2626),
-      duration: Duration(seconds: ok ? 3 : 5),
-      behavior: SnackBarBehavior.floating,
-    ));
+    final messenger =
+        ownerScaffoldMessengerKey.currentState ?? ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(ok ? successMsg : fallo),
+        backgroundColor: ok ? const Color(0xFF15803D) : const Color(0xFFDC2626),
+        duration: Duration(seconds: ok ? 3 : 5),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   @override
@@ -653,7 +760,10 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
       appBar: AppBar(
         title: Text('@${widget.nombreInicial}'),
         actions: [
-          IconButton(onPressed: _loading ? null : _cargar, icon: const Icon(Icons.refresh)),
+          IconButton(
+            onPressed: _loading ? null : _cargar,
+            icon: const Icon(Icons.refresh),
+          ),
         ],
       ),
       body: Stack(
@@ -670,45 +780,45 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                     ],
                   )
                 : _error != null
-                    ? ListView(
-                        physics: const AlwaysScrollableScrollPhysics(),
-                        children: [
-                          SizedBox(height: 120),
-                          Center(child: Text(_error!)),
-                        ],
-                      )
-                    : _data == null
-                        ? ListView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            children: const [
-                              SizedBox(height: 120),
-                              Center(child: Text('Sin datos')),
-                            ],
-                          )
-                        : SingleChildScrollView(
-                            physics: const AlwaysScrollableScrollPhysics(),
-                            padding: const EdgeInsets.all(20),
-                            child: Center(
-                              child: ConstrainedBox(
-                                constraints: const BoxConstraints(maxWidth: 900),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                                  children: [
-                                    _bannerEstado(),
-                                    if (_estaPausada) const SizedBox(height: 14),
-                                    _accionesTop(),
-                                    const SizedBox(height: 20),
-                                    _statsGrid(),
-                                    const SizedBox(height: 20),
-                                    _infoTabla(),
-                                    const SizedBox(height: 20),
-                                    _seccionPublicaciones(),
-                                    const SizedBox(height: 32),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: [
+                      SizedBox(height: 120),
+                      Center(child: Text(_error!)),
+                    ],
+                  )
+                : _data == null
+                ? ListView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    children: const [
+                      SizedBox(height: 120),
+                      Center(child: Text('Sin datos')),
+                    ],
+                  )
+                : SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(20),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 900),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _bannerEstado(),
+                            if (_estaPausada) const SizedBox(height: 14),
+                            _accionesTop(),
+                            const SizedBox(height: 20),
+                            _statsGrid(),
+                            const SizedBox(height: 20),
+                            _infoTabla(),
+                            const SizedBox(height: 20),
+                            _seccionPublicaciones(),
+                            const SizedBox(height: 32),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
           ),
           if (_procesandoAccion)
             const Positioned(
@@ -731,14 +841,18 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     );
     final pausadaEn = _perfil['pausada_en']?.toString();
     final fecha = pausadaEn != null
-        ? DateFormat('dd/MM/yyyy HH:mm').format(DateTime.parse(pausadaEn).toLocal())
+        ? DateFormat(
+            'dd/MM/yyyy HH:mm',
+          ).format(DateTime.parse(pausadaEn).toLocal())
         : '-';
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: const Color(0xFFFEE2E2),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFEF4444).withValues(alpha: 0.5)),
+        border: Border.all(
+          color: const Color(0xFFEF4444).withValues(alpha: 0.5),
+        ),
       ),
       child: Row(
         children: [
@@ -748,12 +862,27 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Cuenta SUSPENDIDA',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w900, color: const Color(0xFF7F1D1D))),
-                Text('Usuario ve: $motivoPublico',
-                    style: GoogleFonts.inter(fontSize: 12, color: const Color(0xFF991B1B))),
-                Text('Nota interna: $notaInterna · $fecha',
-                    style: GoogleFonts.inter(fontSize: 11, color: const Color(0xFF991B1B))),
+                Text(
+                  'Cuenta SUSPENDIDA',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w900,
+                    color: const Color(0xFF7F1D1D),
+                  ),
+                ),
+                Text(
+                  'Usuario ve: $motivoPublico',
+                  style: GoogleFonts.inter(
+                    fontSize: 12,
+                    color: const Color(0xFF991B1B),
+                  ),
+                ),
+                Text(
+                  'Nota interna: $notaInterna · $fecha',
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: const Color(0xFF991B1B),
+                  ),
+                ),
               ],
             ),
           ),
@@ -792,7 +921,9 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
         _BotonAccion(
           icono: _estaPausada ? Icons.play_circle : Icons.pause_circle,
           label: _estaPausada ? 'Reactivar cuenta' : 'Pausar cuenta',
-          color: _estaPausada ? const Color(0xFF22C55E) : const Color(0xFFE67E22),
+          color: _estaPausada
+              ? const Color(0xFF22C55E)
+              : const Color(0xFFE67E22),
           cargando: _procesandoAccion,
           onTap: _procesandoAccion ? null : _togglePausar,
         ),
@@ -817,56 +948,121 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
         : '-';
 
     final items = <_StatItem>[
-      _StatItem('Activo desde', activoStr, Icons.calendar_today, const Color(0xFF6366F1)),
+      _StatItem(
+        'Activo desde',
+        activoStr,
+        Icons.calendar_today,
+        const Color(0xFF6366F1),
+      ),
       _StatItem('Email', _email, Icons.email, const Color(0xFF8B5CF6)),
     ];
 
     if (_esLocal) {
       items.addAll([
-        _StatItem('Plan', (_perfil['plan_suscripcion']?.toString() ?? '-').toUpperCase(),
-            Icons.workspace_premium, _planColor(_perfil['plan_suscripcion']?.toString())),
+        _StatItem(
+          'Plan',
+          (_perfil['plan_suscripcion']?.toString() ?? '-').toUpperCase(),
+          Icons.workspace_premium,
+          _planColor(_perfil['plan_suscripcion']?.toString()),
+        ),
         if (_esPionero)
           _StatItem('Pionero', 'Activo', Icons.star, const Color(0xFFE0B800)),
-        _StatItem('Verificado', (_perfil['local_verificado'] == true) ? 'Sí' : 'No',
-            Icons.verified, const Color(0xFF0EA5E9)),
-        _StatItem('Eventos publicados', '${_stats['eventos_total'] ?? 0}',
-            Icons.event, const Color(0xFF22C55E)),
-        _StatItem('Eventos activos', '${_stats['eventos_activos'] ?? 0}',
-            Icons.bolt, const Color(0xFFF59E0B)),
-        _StatItem('Reviews recibidos', '${_stats['reviews_recibidas'] ?? 0}',
-            Icons.rate_review, const Color(0xFFEC4899)),
-        _StatItem('Promos', '${_stats['promos_total'] ?? 0}',
-            Icons.local_offer, const Color(0xFFEF4444)),
-        _StatItem('Staff activo', '${_stats['staff_activos'] ?? 0}',
-            Icons.group, const Color(0xFF14B8A6)),
-        _StatItem('Flyers IA usados', '${_stats['flyers_ia_usados'] ?? 0}',
-            Icons.auto_awesome, const Color(0xFF8B5CF6)),
+        _StatItem(
+          'Verificado',
+          (_perfil['local_verificado'] == true) ? 'Sí' : 'No',
+          Icons.verified,
+          const Color(0xFF0EA5E9),
+        ),
+        _StatItem(
+          'Eventos publicados',
+          '${_stats['eventos_total'] ?? 0}',
+          Icons.event,
+          const Color(0xFF22C55E),
+        ),
+        _StatItem(
+          'Eventos activos',
+          '${_stats['eventos_activos'] ?? 0}',
+          Icons.bolt,
+          const Color(0xFFF59E0B),
+        ),
+        _StatItem(
+          'Reviews recibidos',
+          '${_stats['reviews_recibidas'] ?? 0}',
+          Icons.rate_review,
+          const Color(0xFFEC4899),
+        ),
+        _StatItem(
+          'Promos',
+          '${_stats['promos_total'] ?? 0}',
+          Icons.local_offer,
+          const Color(0xFFEF4444),
+        ),
+        _StatItem(
+          'Staff activo',
+          '${_stats['staff_activos'] ?? 0}',
+          Icons.group,
+          const Color(0xFF14B8A6),
+        ),
+        _StatItem(
+          'Flyers IA usados',
+          '${_stats['flyers_ia_usados'] ?? 0}',
+          Icons.auto_awesome,
+          const Color(0xFF8B5CF6),
+        ),
       ]);
     } else {
       items.addAll([
-        _StatItem('Reviews escritas', '${_stats['reviews_escritas'] ?? 0}',
-            Icons.rate_review, const Color(0xFFEC4899)),
-        _StatItem('Tokens canjeados', '${_stats['tokens_canjeados'] ?? 0}',
-            Icons.confirmation_number, const Color(0xFFF59E0B)),
-        _StatItem('Promos canjeadas', '${_stats['tokens_promos_canjeados'] ?? 0}',
-            Icons.local_offer, const Color(0xFFEF4444)),
-        _StatItem('Grupos creados', '${_stats['grupos_creados'] ?? 0}',
-            Icons.groups, const Color(0xFF22C55E)),
-        _StatItem('Amigos', '${_stats['amigos'] ?? 0}',
-            Icons.favorite, const Color(0xFFEC4899)),
+        _StatItem(
+          'Reviews escritas',
+          '${_stats['reviews_escritas'] ?? 0}',
+          Icons.rate_review,
+          const Color(0xFFEC4899),
+        ),
+        _StatItem(
+          'Tokens canjeados',
+          '${_stats['tokens_canjeados'] ?? 0}',
+          Icons.confirmation_number,
+          const Color(0xFFF59E0B),
+        ),
+        _StatItem(
+          'Promos canjeadas',
+          '${_stats['tokens_promos_canjeados'] ?? 0}',
+          Icons.local_offer,
+          const Color(0xFFEF4444),
+        ),
+        _StatItem(
+          'Grupos creados',
+          '${_stats['grupos_creados'] ?? 0}',
+          Icons.groups,
+          const Color(0xFF22C55E),
+        ),
+        _StatItem(
+          'Amigos',
+          '${_stats['amigos'] ?? 0}',
+          Icons.favorite,
+          const Color(0xFFEC4899),
+        ),
       ]);
     }
 
-    return LayoutBuilder(builder: (ctx, c) {
-      final cols = c.maxWidth >= 800 ? 4 : c.maxWidth >= 520 ? 3 : 2;
-      const gap = 10.0;
-      final w = (c.maxWidth - (cols - 1) * gap) / cols;
-      return Wrap(
-        spacing: gap,
-        runSpacing: gap,
-        children: items.map((it) => SizedBox(width: w, child: _statCard(it))).toList(),
-      );
-    });
+    return LayoutBuilder(
+      builder: (ctx, c) {
+        final cols = c.maxWidth >= 800
+            ? 4
+            : c.maxWidth >= 520
+            ? 3
+            : 2;
+        const gap = 10.0;
+        final w = (c.maxWidth - (cols - 1) * gap) / cols;
+        return Wrap(
+          spacing: gap,
+          runSpacing: gap,
+          children: items
+              .map((it) => SizedBox(width: w, child: _statCard(it)))
+              .toList(),
+        );
+      },
+    );
   }
 
   Widget _statCard(_StatItem it) {
@@ -894,14 +1090,21 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
             alignment: Alignment.centerLeft,
             child: Text(
               it.value,
-              style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w900),
+              style: GoogleFonts.inter(
+                fontSize: 15,
+                fontWeight: FontWeight.w900,
+              ),
             ),
           ),
           Text(
             it.label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.inter(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              color: Colors.black54,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -929,7 +1132,12 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
     _perfil.forEach((k, v) {
       if (v == null) return;
       // Skip campos largos/internos
-      if (k == 'pausada_por' || k == 'pausada_motivo' || k == 'pausada_motivo_publico' || k == 'pausada_en') return;
+      if (k == 'pausada_por' ||
+          k == 'pausada_motivo' ||
+          k == 'pausada_motivo_publico' ||
+          k == 'pausada_en') {
+        return;
+      }
       if (v is List) {
         if (v.isEmpty) return;
         rows.add(MapEntry(k, v.join(', ')));
@@ -953,10 +1161,19 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 8),
             child: Row(
               children: [
-                const Icon(Icons.info_outline, size: 16, color: Color(0xFF5A2EFF)),
+                const Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: Color(0xFF5A2EFF),
+                ),
                 const SizedBox(width: 6),
-                Text('Datos del perfil',
-                    style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13)),
+                Text(
+                  'Datos del perfil',
+                  style: GoogleFonts.inter(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 13,
+                  ),
+                ),
               ],
             ),
           ),
@@ -972,13 +1189,20 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
                     width: 200,
                     child: Text(
                       rows[i].key,
-                      style: GoogleFonts.inter(fontSize: 12, color: Colors.black54, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                        fontSize: 12,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                   Expanded(
                     child: SelectableText(
                       rows[i].value,
-                      style: GoogleFonts.inter(fontSize: 12.5, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.inter(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -1021,8 +1245,10 @@ class _AdminDetalleScreenState extends State<AdminDetalleScreen> {
         ],
       );
     } else {
-      final reviews = (_data?['reviews_recientes'] as List?)?.cast<dynamic>() ?? [];
-      final tokens = (_data?['tokens_recientes'] as List?)?.cast<dynamic>() ?? [];
+      final reviews =
+          (_data?['reviews_recientes'] as List?)?.cast<dynamic>() ?? [];
+      final tokens =
+          (_data?['tokens_recientes'] as List?)?.cast<dynamic>() ?? [];
       return Column(
         children: [
           _ExpansionLista(
@@ -1134,7 +1360,9 @@ class _OpcionResetCard extends StatelessWidget {
                   if (recomendada)
                     Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 3),
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: color,
                         borderRadius: BorderRadius.circular(99),
@@ -1195,7 +1423,10 @@ class _BotonAccion extends StatelessWidget {
           ? SizedBox(
               width: 18,
               height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white.withValues(alpha: 0.9)),
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white.withValues(alpha: 0.9),
+              ),
             )
           : Icon(icono, size: 18),
       label: Text(label),
@@ -1241,24 +1472,34 @@ class _ExpansionLista extends StatelessWidget {
           ),
           child: Icon(icon, color: color, size: 16),
         ),
-        title: Text(titulo,
-            style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13)),
+        title: Text(
+          titulo,
+          style: GoogleFonts.inter(fontWeight: FontWeight.w800, fontSize: 13),
+        ),
         trailing: Container(
           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
           decoration: BoxDecoration(
             color: color.withValues(alpha: 0.12),
             borderRadius: BorderRadius.circular(99),
           ),
-          child: Text('$count',
-              style: GoogleFonts.inter(
-                  fontSize: 12, fontWeight: FontWeight.w900, color: color)),
+          child: Text(
+            '$count',
+            style: GoogleFonts.inter(
+              fontSize: 12,
+              fontWeight: FontWeight.w900,
+              color: color,
+            ),
+          ),
         ),
         children: count == 0
             ? [
                 const Padding(
                   padding: EdgeInsets.all(16),
-                  child: Text('Sin registros', style: TextStyle(color: Colors.black45)),
-                )
+                  child: Text(
+                    'Sin registros',
+                    style: TextStyle(color: Colors.black45),
+                  ),
+                ),
               ]
             : children,
       ),
@@ -1298,7 +1539,9 @@ class _ItemEvento extends StatelessWidget {
           fontWeight: FontWeight.w700,
         ),
       ),
-      subtitle: Text('$fechaStr · ${item['visitas'] ?? 0} visitas · ${item['canjeos'] ?? 0} canjes'),
+      subtitle: Text(
+        '$fechaStr · ${item['visitas'] ?? 0} visitas · ${item['canjeos'] ?? 0} canjes',
+      ),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -1308,9 +1551,14 @@ class _ItemEvento extends StatelessWidget {
               color: jColor,
               borderRadius: BorderRadius.circular(99),
             ),
-            child: Text(jLabel,
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900)),
+            child: Text(
+              jLabel,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ),
           const SizedBox(width: 6),
           Container(
@@ -1319,13 +1567,18 @@ class _ItemEvento extends StatelessWidget {
               color: borrado
                   ? Colors.grey.shade300
                   : estado == 'publicado'
-                      ? const Color(0xFF22C55E)
-                      : Colors.grey,
+                  ? const Color(0xFF22C55E)
+                  : Colors.grey,
               borderRadius: BorderRadius.circular(99),
             ),
-            child: Text(borrado ? 'BORRADO' : estado.toUpperCase(),
-                style: const TextStyle(
-                    color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900)),
+            child: Text(
+              borrado ? 'BORRADO' : estado.toUpperCase(),
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 9.5,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ),
         ],
       ),
@@ -1348,8 +1601,10 @@ class _ItemPago extends StatelessWidget {
         : '-';
     return ListTile(
       dense: true,
-      title: Text('USD $monto · plan $plan',
-          style: const TextStyle(fontWeight: FontWeight.w700)),
+      title: Text(
+        'USD $monto · plan $plan',
+        style: const TextStyle(fontWeight: FontWeight.w700),
+      ),
       subtitle: Text('$fechaStr · ${item['tipo_solicitud'] ?? ''}'),
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -1357,13 +1612,18 @@ class _ItemPago extends StatelessWidget {
           color: estado == 'aplicado'
               ? const Color(0xFF22C55E)
               : estado == 'rechazado'
-                  ? const Color(0xFFEF4444)
-                  : const Color(0xFFE67E22),
+              ? const Color(0xFFEF4444)
+              : const Color(0xFFE67E22),
           borderRadius: BorderRadius.circular(99),
         ),
-        child: Text(estado.toUpperCase(),
-            style: const TextStyle(
-                color: Colors.white, fontSize: 9.5, fontWeight: FontWeight.w900)),
+        child: Text(
+          estado.toUpperCase(),
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 9.5,
+            fontWeight: FontWeight.w900,
+          ),
+        ),
       ),
     );
   }
@@ -1386,11 +1646,15 @@ class _ItemReview extends StatelessWidget {
           color: const Color(0xFFFEF3C7),
           borderRadius: BorderRadius.circular(6),
         ),
-        child: Text('★ $stars',
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+        child: Text(
+          '★ $stars',
+          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12),
+        ),
       ),
-      title: Text('@$localUsername',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+      title: Text(
+        '@$localUsername',
+        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+      ),
       subtitle: Text(coment, maxLines: 2, overflow: TextOverflow.ellipsis),
     );
   }
